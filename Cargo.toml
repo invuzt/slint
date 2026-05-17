@@ -1,5 +1,5 @@
 [package]
-name = "vuzt-slint"
+name = "vuzt_slint"
 version = "0.1.0"
 edition = "2021"
 
