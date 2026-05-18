@@ -8,6 +8,7 @@ crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 slint = { version = "1.16", features = ["backend-android-activity-06"] }
+i-slint-backend-android-activity = "1.16"
 android-activity = { version = "0.6", features = ["native-activity"] }
 log = "0.4"
 android_logger = "0.13"
