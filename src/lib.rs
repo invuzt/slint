@@ -4,10 +4,14 @@ slint::include_modules!();
 use android_activity::AndroidApp;
 
 #[no_mangle]
-fn android_main(_app: AndroidApp) {
+fn android_main(app: AndroidApp) {
     android_logger::init_once(
         android_logger::Config::default().with_max_level(log::LevelFilter::Info)
     );
+    
+    // Initialize Android backend for Slint
+    let backend = slint::backend::android::AndroidPlatform::new(app);
+    slint::platform::set_platform(Box::new(backend)).unwrap();
     
     let app = App::new().unwrap();
     let app_weak = app.as_weak();
