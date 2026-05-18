@@ -7,7 +7,7 @@ edition = "2021"
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
-slint = { version = "1.5", features = ["android", "android-native-activity"] }
+slint = { version = "1.5", features = ["backend-android-activity-05", "compat-1-2"] }
 android-activity = "0.5"
 log = "0.4"
 android_logger = "0.13"
