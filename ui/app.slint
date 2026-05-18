@@ -1,6 +1,6 @@
 import { VerticalBox, Button, LineEdit } from "std-widgets.slint";
 
-component App {
+component App inherits Window {
     in-out property <string> name-input: "";
     in-out property <string> message: "";
     callback say-hello;
