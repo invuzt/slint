@@ -32,14 +32,6 @@ keystore_password = "android"
 key_alias = "androiddebugkey"
 key_password = "android"
 
-# Icon configuration
-[package.metadata.android.icon]
-- "android-res/res/mipmap-hdpi/ic_launcher.png" = "hdpi"
-- "android-res/res/mipmap-mdpi/ic_launcher.png" = "mdpi"
-- "android-res/res/mipmap-xhdpi/ic_launcher.png" = "xhdpi"
-- "android-res/res/mipmap-xxhdpi/ic_launcher.png" = "xxhdpi"
-- "android-res/res/mipmap-xxxhdpi/ic_launcher.png" = "xxxhdpi"
-
 [profile.release]
 opt-level = "z"
 lto = true
