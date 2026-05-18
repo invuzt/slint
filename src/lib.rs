@@ -9,7 +9,6 @@ fn android_main(_app: AndroidApp) {
         android_logger::Config::default().with_max_level(log::LevelFilter::Info)
     );
     
-    // Coba tanpa inisialisasi manual
     let app = App::new().expect("Failed to create Slint app");
     let app_weak = app.as_weak();
     
