@@ -42,3 +42,4 @@ jobs:
       with:
         name: cakru-app
         path: target/release/apk/*.apk
+        exclude: target/release/apk/*-unaligned.apk
