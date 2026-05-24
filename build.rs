@@ -1,3 +1,3 @@
 fn main() {
-    slint_build::compile("src/cakrui.slint").unwrap();
+    slint_build::compile("cakrui.slint").unwrap();
 }

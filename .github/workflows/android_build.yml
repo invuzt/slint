@@ -37,4 +37,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: cakru-app
-        path: target/android-artifacts/debug/apk/*.apk
+        path: target/android-artifacts/**/*.apk
