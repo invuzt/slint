@@ -6,7 +6,7 @@ slint::include_modules!();
 fn android_main(app: slint::android::AndroidApp) {
     slint::android::init(app).unwrap();
     
-    let main_window = App::new().unwrap();
+    let main_window = CakruApp::new().unwrap();
     let main_window_weak = main_window.as_weak();
     
     main_window.on_say_hello(move || {
@@ -16,7 +16,7 @@ fn android_main(app: slint::android::AndroidApp) {
         if name.is_empty() {
             main_window.set_message("Nama tidak boleh kosong!".into());
         } else {
-            main_window.set_message(format!("Halo {}, Selamat datang di Slint!", name).into());
+            main_window.set_message(format!("Halo {}, Selamat datang di Cakru App!", name).into());
         }
     });
     

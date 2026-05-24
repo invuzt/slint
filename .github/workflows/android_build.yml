@@ -1,4 +1,4 @@
-name: Build Rust Android APK
+name: Build Cakru APK
 
 on:
   push:
@@ -30,11 +30,11 @@ jobs:
         ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --install "platforms;android-30" "ndk;26.1.10909125"
         echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/26.1.10909125" >> $GITHUB_ENV
 
-    - name: Build APK (debug)
+    - name: Build APK
       run: cargo apk build
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: vuzt-sapa-app-debug
+        name: cakru-app
         path: target/android-artifacts/debug/apk/*.apk

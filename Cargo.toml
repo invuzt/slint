@@ -1,5 +1,5 @@
 [package]
-name = "vuzt_slint"
+name = "cakru_app"
 version = "0.1.0"
 edition = "2021"
 
@@ -15,8 +15,8 @@ android_logger = "0.13"
 slint-build = "1.16"
 
 [package.metadata.android]
-package = "com.cak.vuzt"
-label = "Vuzt Slint"
+package = "com.cak.cakru"
+label = "Cakru App"
 build_targets = ["aarch64-linux-android"]
 target_sdk_version = 30
 min_sdk_version = 21
@@ -34,9 +34,3 @@ strip = true
 [profile.release.package."*"]
 opt-level = "z"
 strip = true
-
-[package.metadata.android.signing.release]
-path = "debug.keystore"
-keystore_password = "android"
-key_alias = "androiddebugkey"
-key_password = "android"
