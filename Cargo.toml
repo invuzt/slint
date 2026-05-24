@@ -34,3 +34,9 @@ strip = true
 [profile.release.package."*"]
 opt-level = "z"
 strip = true
+
+[package.metadata.android.signing.release]
+path = "temp.keystore"
+keystore_password = "temp123"
+key_alias = "temp"
+key_password = "temp123"
