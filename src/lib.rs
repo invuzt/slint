@@ -1,32 +1,24 @@
 #![cfg(target_os = "android")]
+
 slint::include_modules!();
 
-use android_activity::AndroidApp;
-
 #[no_mangle]
-fn android_main(app: AndroidApp) {
-    android_logger::init_once(
-        android_logger::Config::default().with_max_level(log::LevelFilter::Info)
-    );
+fn android_main(app: slint::android::AndroidApp) {
+    slint::android::init(app).unwrap();
     
-    // Initialize the Android backend properly
-    let mut backend = i_slint_backend_android_activity::AndroidPlatform::new(app);
-    slint::platform::set_platform(Box::new(backend))
-        .expect("Failed to set Slint platform");
+    let main_window = App::new().unwrap();
+    let main_window_weak = main_window.as_weak();
     
-    let app = App::new().expect("Failed to create Slint app");
-    let app_weak = app.as_weak();
-    
-    app.on_say_hello(move || {
-        let app = app_weak.unwrap();
-        let name = app.get_name_input();
+    main_window.on_say_hello(move || {
+        let main_window = main_window_weak.unwrap();
+        let name = main_window.get_name_input();
         
         if name.is_empty() {
-            app.set_message("Nama tidak boleh kosong!".into());
+            main_window.set_message("Nama tidak boleh kosong!".into());
         } else {
-            app.set_message(format!("Halo {}, Selamat datang di Slint!", name).into());
+            main_window.set_message(format!("Halo {}, Selamat datang di Slint!", name).into());
         }
     });
     
-    app.run().expect("Failed to run Slint app");
+    main_window.run().unwrap();
 }
