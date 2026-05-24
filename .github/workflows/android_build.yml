@@ -30,14 +30,11 @@ jobs:
         ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --install "platforms;android-30" "ndk;26.1.10909125"
         echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/26.1.10909125" >> $GITHUB_ENV
 
-    - name: Build APK
-      run: cargo apk build
-
-    - name: List files
-      run: find target -name "*.apk" 2>/dev/null || echo "no apk found"
+    - name: Build APK (release)
+      run: cargo apk build --release
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: cakru-app
-        path: target/*/apk/*.apk
+        path: target/release/apk/*.apk
