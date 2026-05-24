@@ -34,3 +34,9 @@ strip = true
 [profile.release.package."*"]
 opt-level = "z"
 strip = true
+
+[package.metadata.android.signing.release]
+path = "debug.keystore"
+keystore_password = "android"
+key_alias = "androiddebugkey"
+key_password = "android"
