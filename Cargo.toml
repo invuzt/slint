@@ -8,8 +8,6 @@ crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 slint = { version = "1.16", features = ["backend-android-activity-06"] }
-i-slint-backend-android-activity = "1.16"
-android-activity = { version = "0.6", features = ["native-activity"] }
 log = "0.4"
 android_logger = "0.13"
 
@@ -26,15 +24,13 @@ min_sdk_version = 21
 [[package.metadata.android.uses_permission]]
 name = "android.permission.INTERNET"
 
-[package.metadata.android.signing.release]
-path = "debug.keystore"
-keystore_password = "android"
-key_alias = "androiddebugkey"
-key_password = "android"
-
 [profile.release]
 opt-level = "z"
-lto = true
+lto = "fat"
 codegen-units = 1
 panic = "abort"
+strip = true
+
+[profile.release.package."*"]
+opt-level = "z"
 strip = true
