@@ -33,8 +33,11 @@ jobs:
     - name: Build APK
       run: cargo apk build
 
+    - name: List files
+      run: find target -name "*.apk" 2>/dev/null || echo "no apk found"
+
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: cakru-app
-        path: target/android-artifacts/**/*.apk
+        path: target/*/apk/*.apk
