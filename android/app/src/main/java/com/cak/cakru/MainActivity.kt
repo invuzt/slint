@@ -24,6 +24,7 @@ class MainActivity : AppCompatActivity() {
             )
             setPadding(50, 50, 50, 50)
             gravity = Gravity.CENTER_HORIZONTAL
+            tag = "App"
         }
 
         val containerStack = Stack<LinearLayout>()
@@ -46,7 +47,7 @@ class MainActivity : AppCompatActivity() {
 
         for (line in lines) {
             val trimmed = line.trim()
-            if (trimmed.isEmpty()) continue
+            if (trimmed.isEmpty() || trimmed.startsWith("#")) continue
 
             if (trimmed.endsWith("{")) {
                 currentWidget = trimmed.split(" ")[0]
@@ -60,6 +61,7 @@ class MainActivity : AppCompatActivity() {
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.WRAP_CONTENT
                         ).apply { setMargins(0, 15, 0, 15) }
+                        tag = "Row"
                     }
                     containerStack.peek().addView(rowLayout)
                     containerStack.push(rowLayout)
@@ -81,10 +83,12 @@ class MainActivity : AppCompatActivity() {
                 colorVal = trimmed.substringAfter("\"").substringBeforeLast("\"")
             } else if (trimmed == "}") {
                 val activeContainer = containerStack.peek()
+                val containerType = activeContainer.tag as? String
 
-                if (currentWidget == "Row" || currentWidget == "App") {
+                if (containerType == "Row" && currentWidget == "") {
                     if (containerStack.size > 1) containerStack.pop()
-                    currentWidget = ""
+                    continue
+                } else if (containerType == "App" && currentWidget == "") {
                     continue
                 }
 
@@ -100,9 +104,7 @@ class MainActivity : AppCompatActivity() {
                             layoutParams = if (activeContainer.orientation == LinearLayout.HORIZONTAL) {
                                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                             } else {
-                                LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                                    setMargins(0, 15, 0, 15)
-                                }
+                                LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
                             }
                         }
                         activeContainer.addView(tv)
