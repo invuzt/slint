@@ -1,23 +1,30 @@
 App {
     Text {
         id: "judul"
-        text: "CakRu App Kanan-Kiri"
+        text: "CakRu App Multi-Tombol"
         size: "28"
         color: "#2196F3"
     }
-    
-    
+
     Input {
         id: "input_nama"
         placeholder: "Ketik sesuatu di sini..."
     }
-    
+
+    # --- Ini Tombol Tunggal yang dimasukkan kembali ---
+    Button {
+        id: "btn_sapa"
+        text: "Sapa Saya"
+        action: "sapa"
+    }
+
     Text {
         id: "output_pesan"
         text: "Menunggu aksi..."
         size: "20"
         color: "#4CAF50"
     }
+
     Row {
         Button {
             id: "btn_kiri"
@@ -29,5 +36,12 @@ App {
             text: "Tombol Kanan"
             action: "klik_kanan"
         }
+    }
+
+    Text {
+        id: "footer"
+        text: "Cakru @ 2026"
+        size: "20"
+        color: "#2196F3"
     }
 }

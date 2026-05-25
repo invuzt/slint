@@ -28,8 +28,14 @@ pub unsafe extern "system" fn Java_com_cak_cakru_RustJni_onButtonClick(
 
     let mut respon = String::new();
 
-    // Logika tombol dinamis diatur di sini
-    if action_str == "klik_kiri" {
+    // Logika pencocokan 3 tombol sekaligus
+    if action_str == "sapa" {
+        if input_str.trim().is_empty() {
+            respon = "Halo Orang Asing! Ketik namamu dong di atas.".to_string();
+        } else {
+            respon = format!("Halo {}! Selamat datang di ekosistem .cakru 🚀", input_str);
+        }
+    } else if action_str == "klik_kiri" {
         respon = format!("Kamu menekan Tombol KIRI! Input: {}", input_str);
     } else if action_str == "klik_kanan" {
         respon = format!("Kamu menekan Tombol KANAN! Input: {}", input_str);
