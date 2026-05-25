@@ -75,7 +75,7 @@ jobs:
                 versionName "1.0"
             }
             
-            # --- Bagian Baru: Harmonisasi Target Java 17 ---
+            // Komentar sudah diperbaiki menggunakan garis miring ganda
             compileOptions {
                 sourceCompatibility JavaVersion.VERSION_17
                 targetCompatibility JavaVersion.VERSION_17
