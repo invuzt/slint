@@ -2,7 +2,7 @@ name: Build Cakru APK Tiny
 
 on:
   push:
-    branches: [ main, cakrui ] # <--- Sekarang otomatis jalan di kedua branch
+    branches: [ main, cakrui ]
   workflow_dispatch:
 
 jobs:
@@ -33,15 +33,17 @@ jobs:
         ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --install "ndk;26.1.10909125"
         echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/26.1.10909125" >> $GITHUB_ENV
 
-    # Mengompilasi Rust menjadi file .so library standar Android
+    # Memasang cargo-ndk agar Rust tahu linker NDK yang tepat untuk Android
+    - name: Install cargo-ndk
+      run: cargo install cargo-ndk
+
+    # Kompilasi yang aman menggunakan cargo-ndk
     - name: Build Rust Library (aarch64)
       run: |
-        cargo build --target aarch64-linux-android --release
-        # Pindahkan file .so ke dalam struktur folder JNI Android agar bisa dibungkus Gradle
+        cargo ndk --target aarch64-linux-android --android-ndk-home ${ANDROID_NDK_HOME} build --release
         mkdir -p android/app/src/main/jniLibs/arm64-v8a
         cp target/aarch64-linux-android/release/libcakru_app.so android/app/src/main/jniLibs/arm64-v8a/
 
-    # Konfigurasi Gradle Build script minimalis langsung via script untuk menghemat file
     - name: Inject Minimal Gradle Files
       run: |
         cat << 'INNER_EOF' > android/build.gradle
@@ -87,7 +89,6 @@ jobs:
         }
         INNER_EOF
 
-        # Buat AndroidManifest minimalis agar APK valid
         mkdir -p android/app/src/main
         cat << 'INNER_EOF' > android/app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android">
