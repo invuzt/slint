@@ -42,7 +42,6 @@ class MainActivity : AppCompatActivity() {
         var sizeVal = ""
         var colorVal = ""
         
-        // Menyimpan EditText aktif terakhir yang ditemukan untuk dipasangkan ke Button terdekat
         var lastActiveInput: EditText? = null
 
         for (line in lines) {
@@ -92,11 +91,10 @@ class MainActivity : AppCompatActivity() {
                     "Text" -> {
                         val tv = TextView(this).apply {
                             text = textVal
-                            // Terapkan kustomisasi ukuran font jika didefinisikan
                             textSize = if (sizeVal.isNotEmpty()) sizeVal.toFloat() else 18f
-                            // Terapkan warna hex secara aman
+                            // PERBAIKAN DI SINI: Menggunakan setTextColor() yang valid
                             if (colorVal.isNotEmpty()) {
-                                try { textColor = Color.parseColor(colorVal) } catch (e: Exception) {}
+                                try { setTextColor(Color.parseColor(colorVal)) } catch (e: Exception) {}
                             }
                             setPadding(0, 15, 0, 15)
                         }
@@ -116,7 +114,7 @@ class MainActivity : AppCompatActivity() {
                         }
                         activeContainer.addView(et)
                         if (idVal.isNotEmpty()) viewMap[idVal] = et
-                        lastActiveInput = et // Amankan referensi input terbaru
+                        lastActiveInput = et
                     }
                     "Button" -> {
                         val btn = Button(this).apply {
@@ -129,7 +127,6 @@ class MainActivity : AppCompatActivity() {
                         }
                         activeContainer.addView(btn)
                         if (actionVal.isNotEmpty()) {
-                            // Ikat button dengan aksi dan input pasangannya
                             buttonActions.add(Triple(btn, actionVal, lastActiveInput))
                         }
                     }
@@ -138,19 +135,14 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Eksekusi aksi klik secara dinamis
         for (triple in buttonActions) {
             val btn = triple.first
             val action = triple.second
             val linkedInput = triple.third
 
             btn.setOnClickListener {
-                // Mengambil data input pasangannya, jika tidak ada kirim string kosong
                 val inputData = linkedInput?.text?.toString() ?: ""
-
                 val resultFromRust = RustJni.Hub(action, inputData)
-
-                // Seluruh respon keluaran ditembak ke target komponen output_pesan
                 val outputTarget = viewMap["output_pesan"] as? TextView
                 outputTarget?.text = resultFromRust
             }
