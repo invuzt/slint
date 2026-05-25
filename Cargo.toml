@@ -4,41 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [lib]
-crate-type = ["cdylib", "staticlib"]
+crate-type = ["cdylib"]
 
 [dependencies]
-slint = { version = "1.16", default-features = false, features = [
-    "std",                           # Menyediakan alokasi memori (Box, Vec, dll) agar tidak error
-    "compat-1-2",                    # Memenuhi syarat wajib kompatibilitas Slint
-    "backend-android-activity-06",   # Backend Android utama kamu
-    "renderer-winit-femtovg"         # Engine rendering grafis yang ringan
-] }
-log = "0.4"
-android_logger = "0.13"
-
-[build-dependencies]
-slint-build = "1.16"
-
-[package.metadata.android]
-package = "com.cak.cakru"
-label = "Cakru App"
-build_targets = ["aarch64-linux-android"]
-min_sdk_version = 21
-target_sdk_version = 34
-resources = "android-res/res"
-
-[package.metadata.android.application]
-icon = "@mipmap/ic_launcher"
-
-[[package.metadata.android.uses_permission]]
-name = "android.permission.INTERNET"
-
-# TRIK AMAN: Memenuhi syarat cargo-apk menggunakan debug key (Aman & Tanpa Password Asli)
-[package.metadata.android.signing.release]
-path = "debug.keystore"
-keystore_password = "android"
-key_alias = "androiddebugkey"
-key_password = "android"
+# Kita hanya butuh crate jni untuk jembatan ke Kotlin
+jni = "0.21"
 
 [profile.release]
 opt-level = "z"
@@ -46,8 +16,3 @@ lto = true
 codegen-units = 1
 panic = "abort"
 strip = "symbols"
-
-[profile.release.package."*"]
-opt-level = "z"
-strip = "symbols"
-codegen-units = 1

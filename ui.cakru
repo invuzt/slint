@@ -1,0 +1,23 @@
+App {
+    Text {
+        id: "judul"
+        text: "CakRu App"
+        size: "28"
+        color: "#2196F3"
+    }
+    Input {
+        id: "input_nama"
+        placeholder: "Ketik nama di sini..."
+    }
+    Button {
+        id: "btn_sapa"
+        text: "Sapa Saya"
+        action: "say_hello"
+    }
+    Text {
+        id: "output_pesan"
+        text: ""
+        size: "20"
+        color: "#4CAF50"
+    }
+}
