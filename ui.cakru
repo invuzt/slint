@@ -6,18 +6,6 @@ App {
         color: "#2196F3"
     }
     
-    Row {
-        Button {
-            id: "btn_kiri"
-            text: "Tombol Kiri"
-            action: "klik_kiri"
-        }
-        Button {
-            id: "btn_kanan"
-            text: "Tombol Kanan"
-            action: "klik_kanan"
-        }
-    }
     
     Input {
         id: "input_nama"
@@ -29,5 +17,17 @@ App {
         text: "Menunggu aksi..."
         size: "20"
         color: "#4CAF50"
+    }
+    Row {
+        Button {
+            id: "btn_kiri"
+            text: "Tombol Kiri"
+            action: "klik_kiri"
+        }
+        Button {
+            id: "btn_kanan"
+            text: "Tombol Kanan"
+            action: "klik_kanan"
+        }
     }
 }
