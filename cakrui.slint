@@ -1,24 +1,49 @@
-import { VerticalBox, Button, LineEdit, ScrollView } from "std-widgets.slint";
+import { VerticalBox, Button, LineEdit, ScrollView, HorizontalBox } from "std-widgets.slint";
 
 export component CakruApp inherits Window {
     in-out property <string> name-input: "";
     in-out property <string> message: "";
+    
+    // Logika internal Slint untuk melacak halaman aktif (0 = Home, 1 = Info)
+    in-out property <int> active-tab: 0; 
+    
     callback say-hello;
 
-    // Pembungkus utama dipindahkan ke elemen layout agar padding safe-area bekerja dengan benar
+    // Wrapper utama yang menangani Safe Area Android
     VerticalLayout {
         padding-left: root.safe-area-insets.left;
         padding-right: root.safe-area-insets.right;
         padding-top: root.safe-area-insets.top;
         padding-bottom: root.safe-area-insets.bottom;
 
+        // ==========================================
+        // 1. TOP APP BAR (Menu Bagian Atas)
+        // ==========================================
+        Rectangle {
+            height: 56px;
+            background: #2196f3;
+            
+            HorizontalLayout {
+                padding-left: 15px;
+                padding-right: 15px;
+                
+                Text {
+                    text: "Cakru App";
+                    font-size: 20px;
+                    color: white;
+                    vertical-alignment: center;
+                }
+            }
+        }
+
+        // ==========================================
+        // 2. KONTEN UTAMA (Berubah sesuai Tab aktif)
+        // ==========================================
         ScrollView {
             mouse-drag-pan-enabled: true;
-            width: 100%;
-            height: 100%;
 
-            VerticalBox {
-                alignment: center;
+            // HALAMAN 1: HOME (Jika active-tab == 0)
+            if (root.active-tab == 0) : VerticalBox {
                 padding: 20px;
                 spacing: 20px;
 
@@ -57,9 +82,79 @@ export component CakruApp inherits Window {
                     font-size: 20px;
                     color: #4caf50;
                     horizontal-alignment: center;
-                    // PERBAIKAN: Menggunakan enum TextWrap yang benar di Slint
                     wrap: TextWrap.word-wrap;
                     visible: message != "";
+                }
+            }
+
+            // HALAMAN 2: INFO (Jika active-tab == 1)
+            if (root.active-tab == 1) : VerticalBox {
+                padding: 20px;
+                spacing: 15px;
+                alignment: center;
+
+                Text {
+                    text: "ℹ️ Tentang Aplikasi";
+                    font-size: 22px;
+                    color: #2196f3;
+                    horizontal-alignment: center;
+                }
+
+                Text {
+                    text: "Aplikasi ini dibuat menggunakan Slint Framework dan Rust UI Engine. Sangat ringan, cepat, dan responsif di Android!";
+                    font-size: 16px;
+                    horizontal-alignment: center;
+                    wrap: TextWrap.word-wrap;
+                }
+            }
+        }
+
+        // ==========================================
+        // 3. BOTTOM NAVIGATION BAR (Menu Bagian Bawah)
+        // ==========================================
+        Rectangle {
+            height: 65px;
+            background: #f5f5f5;
+
+            HorizontalLayout {
+                alignment: space-around;
+
+                // TOMBOL TAB 1: HOME
+                Rectangle {
+                    background: root.active-tab == 0 ? #e3f2fd : Colors.transparent;
+                    border-radius: 8px;
+                    
+                    HorizontalLayout {
+                        padding: 10px;
+                        alignment: center;
+                        Text {
+                            text: "🏠 Home";
+                            font-size: 16px;
+                            color: root.active-tab == 0 ? #2196f3 : #757575;
+                            vertical-alignment: center;
+                        }
+                    }
+                    // Mengubah state active-tab murni di sisi Slint
+                    TouchArea { clicked => { root.active-tab = 0; } }
+                }
+
+                // TOMBOL TAB 2: INFO
+                Rectangle {
+                    background: root.active-tab == 1 ? #e3f2fd : Colors.transparent;
+                    border-radius: 8px;
+                    
+                    HorizontalLayout {
+                        padding: 10px;
+                        alignment: center;
+                        Text {
+                            text: "ℹ️ Info";
+                            font-size: 16px;
+                            color: root.active-tab == 1 ? #2196f3 : #757575;
+                            vertical-alignment: center;
+                        }
+                    }
+                    // Mengubah state active-tab murni di sisi Slint
+                    TouchArea { clicked => { root.active-tab = 1; } }
                 }
             }
         }
