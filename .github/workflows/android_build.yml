@@ -55,6 +55,11 @@ jobs:
         include ':app'
         INNER_EOF
 
+        # --- Bagian Baru: Membuka Gerbang AndroidX ---
+        cat << 'INNER_EOF' > android/gradle.properties
+        android.useAndroidX=true
+        INNER_EOF
+
         cat << 'INNER_EOF' > android/app/build.gradle
         plugins {
             id 'com.android.application'
