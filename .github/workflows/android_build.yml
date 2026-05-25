@@ -16,18 +16,23 @@ jobs:
       with:
         targets: aarch64-linux-android
 
+    # Mengaktifkan cache tangguh untuk dependensi dan biner kargo
     - name: Rust Cache
       uses: Swatinem/rust-cache@v2
 
+    # OPTIMASI: Pasang cargo-apk menggunakan binstall (unduh biner siap pakai, bukan compile dari awal)
     - name: Install cargo-apk
-      run: cargo install cargo-apk
+      run: |
+        curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install.sh | sh
+        cargo binstall --deploy-ids cargo-apk -y
 
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
 
-    - name: Install NDK & Platform 30
+    # OPTIMASI: Selaraskan instalasi platform SDK ke API 34 sesuai Cargo.toml
+    - name: Install NDK & Platform 34
       run: |
-        ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --install "platforms;android-30" "ndk;26.1.10909125"
+        ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --install "platforms;android-34" "ndk;26.1.10909125"
         echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/26.1.10909125" >> $GITHUB_ENV
 
     - name: Create temporary keystore
