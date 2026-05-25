@@ -1,5 +1,6 @@
 package com.cak.cakru
 
+import android.graphics.Color
 import android.os.Bundle
 import android.view.Gravity
 import android.view.ViewGroup
@@ -29,11 +30,8 @@ class MainActivity : AppCompatActivity() {
         containerStack.push(rootLayout)
 
         val rawUiData = RustJni.getUiLayout()
-        
-        // Simpan semua referensi view berdasarkan ID-nya agar tidak tertukar
         val viewMap = HashMap<String, android.view.View>()
-        // Daftarkan juga tombol yang butuh dipasangi aksi setelah loop selesai
-        val buttonActions = ArrayList<Pair<Button, String>>()
+        val buttonActions = ArrayList<Triple<Button, String, EditText?>>()
 
         val lines = rawUiData.split("\n")
         var currentWidget = ""
@@ -41,6 +39,11 @@ class MainActivity : AppCompatActivity() {
         var textVal = ""
         var hintVal = ""
         var actionVal = ""
+        var sizeVal = ""
+        var colorVal = ""
+        
+        // Menyimpan EditText aktif terakhir yang ditemukan untuk dipasangkan ke Button terdekat
+        var lastActiveInput: EditText? = null
 
         for (line in lines) {
             val trimmed = line.trim()
@@ -48,8 +51,8 @@ class MainActivity : AppCompatActivity() {
 
             if (trimmed.endsWith("{")) {
                 currentWidget = trimmed.split(" ")[0]
-                idVal = ""; textVal = ""; hintVal = ""; actionVal = ""
-                
+                idVal = ""; textVal = ""; hintVal = ""; actionVal = ""; sizeVal = ""; colorVal = ""
+
                 if (currentWidget == "Row") {
                     val rowLayout = LinearLayout(this).apply {
                         orientation = LinearLayout.HORIZONTAL
@@ -62,8 +65,8 @@ class MainActivity : AppCompatActivity() {
                     containerStack.push(rowLayout)
                 }
                 continue
-            } 
-            
+            }
+
             if (trimmed.startsWith("id:")) {
                 idVal = trimmed.substringAfter("\"").substringBeforeLast("\"")
             } else if (trimmed.startsWith("text:")) {
@@ -72,6 +75,10 @@ class MainActivity : AppCompatActivity() {
                 hintVal = trimmed.substringAfter("\"").substringBeforeLast("\"")
             } else if (trimmed.startsWith("action:")) {
                 actionVal = trimmed.substringAfter("\"").substringBeforeLast("\"")
+            } else if (trimmed.startsWith("size:")) {
+                sizeVal = trimmed.substringAfter("\"").substringBeforeLast("\"")
+            } else if (trimmed.startsWith("color:")) {
+                colorVal = trimmed.substringAfter("\"").substringBeforeLast("\"")
             } else if (trimmed == "}") {
                 val activeContainer = containerStack.peek()
 
@@ -85,8 +92,13 @@ class MainActivity : AppCompatActivity() {
                     "Text" -> {
                         val tv = TextView(this).apply {
                             text = textVal
-                            textSize = 20f
-                            setPadding(0, 20, 0, 20)
+                            // Terapkan kustomisasi ukuran font jika didefinisikan
+                            textSize = if (sizeVal.isNotEmpty()) sizeVal.toFloat() else 18f
+                            // Terapkan warna hex secara aman
+                            if (colorVal.isNotEmpty()) {
+                                try { textColor = Color.parseColor(colorVal) } catch (e: Exception) {}
+                            }
+                            setPadding(0, 15, 0, 15)
                         }
                         activeContainer.addView(tv)
                         if (idVal.isNotEmpty()) viewMap[idVal] = tv
@@ -104,6 +116,7 @@ class MainActivity : AppCompatActivity() {
                         }
                         activeContainer.addView(et)
                         if (idVal.isNotEmpty()) viewMap[idVal] = et
+                        lastActiveInput = et // Amankan referensi input terbaru
                     }
                     "Button" -> {
                         val btn = Button(this).apply {
@@ -115,9 +128,9 @@ class MainActivity : AppCompatActivity() {
                             }
                         }
                         activeContainer.addView(btn)
-                        // Simpan dulu button dan nama aksinya ke list
                         if (actionVal.isNotEmpty()) {
-                            buttonActions.add(Pair(btn, actionVal))
+                            // Ikat button dengan aksi dan input pasangannya
+                            buttonActions.add(Triple(btn, actionVal, lastActiveInput))
                         }
                     }
                 }
@@ -125,20 +138,19 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // SETELAH LAYOUT SELESAI DIBUAT: Pasang fungsi klik dengan target ID yang presisi
-        for (pair in buttonActions) {
-            val btn = pair.first
-            val action = pair.second
-            
+        // Eksekusi aksi klik secara dinamis
+        for (triple in buttonActions) {
+            val btn = triple.first
+            val action = triple.second
+            val linkedInput = triple.third
+
             btn.setOnClickListener {
-                // Ambil data dari input_nama secara spesifik lewat Map ID
-                val inputTarget = viewMap["input_nama"] as? EditText
-                val inputData = inputTarget?.text?.toString() ?: ""
-                
-                // Kirim ke Rust Hub
+                // Mengambil data input pasangannya, jika tidak ada kirim string kosong
+                val inputData = linkedInput?.text?.toString() ?: ""
+
                 val resultFromRust = RustJni.Hub(action, inputData)
-                
-                // Tembakkan hasilnya khusus ke output_pesan lewat Map ID
+
+                // Seluruh respon keluaran ditembak ke target komponen output_pesan
                 val outputTarget = viewMap["output_pesan"] as? TextView
                 outputTarget?.text = resultFromRust
             }
