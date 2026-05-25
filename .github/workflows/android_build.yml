@@ -29,17 +29,17 @@ jobs:
         tar -xvf cargo-binstall-${ARCH}.tgz
         mv cargo-binstall ~/.cargo/bin/
 
-    # PERBAIKAN: Menghapus flag --deploy-ids yang bikin error
+    # Memasang cargo-apk dengan cepat
     - name: Install cargo-apk
       run: cargo binstall cargo-apk -y
 
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
 
-    # Selaraskan instalasi platform SDK ke API 34 sesuai Cargo.toml
-    - name: Install NDK & Platform 34
+    # PERBAIKAN: Pasang android-30 (kebutuhan internal cargo-apk) DAN android-34 (target aplikasi) bersamaan
+    - name: Install NDK & Platforms
       run: |
-        ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --install "platforms;android-34" "ndk;26.1.10909125"
+        ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --install "platforms;android-30" "platforms;android-34" "ndk;26.1.10909125"
         echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/26.1.10909125" >> $GITHUB_ENV
 
     - name: Create temporary keystore
