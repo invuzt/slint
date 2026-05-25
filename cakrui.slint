@@ -5,14 +5,13 @@ import { CakruInputField, CakruButton } from "ui/style_ru.slint";
 export component CakruApp inherits Window {
     in-out property <string> name-input <=> input-field.text;
     in-out property <string> message: "";
-    // Variabel pengendali utama tema (diatur oleh Rust)
     in-out property <bool> is-dark: true; 
     callback say-hello;
 
-    // Background dinamis: Gradasi gelap malam VS Putih bersih abu-abu
+    // PERBAIKAN: Mengganti 100__ menjadi 100% (bebas dari error typo)
     background: root.is-dark ? 
-        @linear-gradient(180deg, #1a1a2e 0%, #16161a 100__) : 
-        @linear-gradient(180deg, #f5f7fa 0%, #e4e8f0 100__);
+        @linear-gradient(180deg, #1a1a2e 0%, #16161a 100%) : 
+        @linear-gradient(180deg, #f5f7fa 0%, #e4e8f0 100%);
 
     VerticalLayout {
         padding-left: root.safe-area-insets.left;
@@ -37,12 +36,12 @@ export component CakruApp inherits Window {
                 input-field := CakruInputField {
                     label-text: "Nama Lengkap";
                     placeholder: "Ketik nama di sini...";
-                    is-dark: root.is-dark; // Oper status ke input
+                    is-dark: root.is-dark;
                 }
 
                 CakruButton {
                     text: "SAPA SAYA";
-                    is-dark: root.is-dark; // Oper status ke tombol
+                    is-dark: root.is-dark;
                     clicked => { root.say-hello(); }
                 }
 
