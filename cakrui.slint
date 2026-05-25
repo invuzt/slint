@@ -1,18 +1,11 @@
-import { ScrollView, VerticalBox } from "std-widgets.slint";
-import { CakruTitle } from "ui/layout_ru.slint";
-import { CakruInputField, CakruButton } from "ui/style_ru.slint";
+import { VerticalBox, Button, LineEdit, ScrollView } from "std-widgets.slint";
 
 export component CakruApp inherits Window {
-    in-out property <string> name-input <=> input-field.text;
+    in-out property <string> name-input: "";
     in-out property <string> message: "";
-    in-out property <bool> is-dark: true; 
     callback say-hello;
 
-    // PERBAIKAN: Mengganti 100__ menjadi 100% (bebas dari error typo)
-    background: root.is-dark ? 
-        @linear-gradient(180deg, #1a1a2e 0%, #16161a 100%) : 
-        @linear-gradient(180deg, #f5f7fa 0%, #e4e8f0 100%);
-
+    // Background default bawaan Slint (biasanya putih/mengikuti default platform)
     VerticalLayout {
         padding-left: root.safe-area-insets.left;
         padding-right: root.safe-area-insets.right;
@@ -26,32 +19,48 @@ export component CakruApp inherits Window {
 
             VerticalBox {
                 alignment: center;
-                padding: 30px;
-                spacing: 25px;
+                padding: 20px;
+                spacing: 20px;
 
-                CakruTitle { 
-                    text: "CakRu"; 
+                Text {
+                    text: "CakRu";
+                    font-size: 28px;
+                    color: #2196f3;
+                    horizontal-alignment: center;
+                    font-weight: 700;
                 }
 
-                input-field := CakruInputField {
-                    label-text: "Nama Lengkap";
-                    placeholder: "Ketik nama di sini...";
-                    is-dark: root.is-dark;
+                VerticalLayout {
+                    spacing: 5px;
+
+                    label := Text {
+                        text: "Nama Lengkap";
+                        font-size: 14px;
+                        color: #757575;
+                        horizontal-alignment: left;
+                    }
+
+                    LineEdit {
+                        placeholder-text: "Ketik nama di sini...";
+                        text: name-input;
+                        accessible-label: label.text;
+                        edited => { name-input = self.text; }
+                    }
                 }
 
-                CakruButton {
-                    text: "SAPA SAYA";
-                    is-dark: root.is-dark;
-                    clicked => { root.say-hello(); }
+                // Kembali menggunakan Button bawaan std-widgets yang stabil
+                Button {
+                    text: "Sapa Saya";
+                    clicked => { say-hello(); }
                 }
 
                 Text {
-                    text: root.message;
+                    text: message;
                     font-size: 20px;
-                    color: root.is-dark ? #4caf50 : #2e7d32;
+                    color: #4caf50;
                     horizontal-alignment: center;
                     wrap: TextWrap.word-wrap;
-                    visible: root.message != "";
+                    visible: message != "";
                 }
             }
         }
