@@ -1,11 +1,10 @@
 import { VerticalBox, Button, LineEdit, ScrollView } from "std-widgets.slint";
 
 export component CakruApp inherits Window {
-    in-out property <string> name-input: "";
+    in-out property <string> name-input <=> input-field.text;
     in-out property <string> message: "";
     callback say-hello;
 
-    // Background default bawaan Slint (biasanya putih/mengikuti default platform)
     VerticalLayout {
         padding-left: root.safe-area-insets.left;
         padding-right: root.safe-area-insets.right;
@@ -40,15 +39,12 @@ export component CakruApp inherits Window {
                         horizontal-alignment: left;
                     }
 
-                    LineEdit {
+                    input-field := LineEdit {
                         placeholder-text: "Ketik nama di sini...";
-                        text: name-input;
                         accessible-label: label.text;
-                        edited => { name-input = self.text; }
                     }
                 }
 
-                // Kembali menggunakan Button bawaan std-widgets yang stabil
                 Button {
                     text: "Sapa Saya";
                     clicked => { say-hello(); }

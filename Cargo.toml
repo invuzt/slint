@@ -7,7 +7,6 @@ edition = "2021"
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
-# PERBAIKAN: Menghapus default-features = false agar internal Slint tidak kehilangan modul 'Box' (std)
 slint = { version = "1.16", features = ["backend-android-activity-06"] }
 log = "0.4"
 android_logger = "0.13"
@@ -20,7 +19,6 @@ package = "com.cak.cakru"
 label = "Cakru App"
 build_targets = ["aarch64-linux-android"]
 min_sdk_version = 21
-# Target SDK 34 tetap dipertahankan karena ini aman dan standar modern
 target_sdk_version = 34
 resources = "android-res/res"
 
@@ -32,17 +30,11 @@ name = "android.permission.INTERNET"
 
 [profile.release]
 opt-level = "z"
-lto = "fat"
+lto = true
 codegen-units = 1
 panic = "abort"
-strip = true
+strip = "symbols"
 
 [profile.release.package."*"]
 opt-level = "z"
-strip = true
-
-[package.metadata.android.signing.release]
-path = "temp.keystore"
-keystore_password = "temp123"
-key_alias = "temp"
-key_password = "temp123"
+strip = "symbols"

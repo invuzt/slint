@@ -11,7 +11,7 @@ fn android_main(app: slint::android::AndroidApp) {
 
     main_window.on_say_hello(move || {
         let main_window = main_window_weak.unwrap();
-        let name = main_window.get_name_input();
+        let name = main_window.get_name_input().trim().to_string();
 
         if name.is_empty() {
             main_window.set_message("Nama tidak boleh kosong!".into());
