@@ -74,7 +74,7 @@ jobs:
                 versionCode 1
                 versionName "1.0"
             }
-            
+
             compileOptions {
                 sourceCompatibility JavaVersion.VERSION_17
                 targetCompatibility JavaVersion.VERSION_17
@@ -82,7 +82,7 @@ jobs:
             kotlinOptions {
                 jvmTarget = '17'
             }
-            
+
             buildTypes {
                 release {
                     minifyEnabled true
@@ -99,10 +99,13 @@ jobs:
         INNER_EOF
 
         mkdir -p android/app/src/main
+        # Diperbarui: Menambahkan atribut android:icon dan android:roundIcon pada AndroidManifest.xml
         cat << 'INNER_EOF' > android/app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android">
             <application
                 android:label="Cakru Tiny"
+                android:icon="@mipmap/ic_launcher"
+                android:roundIcon="@mipmap/ic_launcher_round"
                 android:theme="@style/Theme.AppCompat.Light.NoActionBar">
                 <activity android:name=".MainActivity" android:exported="true">
                     <intent-filter>
@@ -113,6 +116,19 @@ jobs:
             </application>
         </manifest>
         INNER_EOF
+
+    # PERBAIKAN UTAMA: Menyuntikkan folder ikon launcher ke dalam resource Android sebelum dicompile
+    - name: Inject Launcher Icons
+      run: |
+        mkdir -p android/app/src/main/res
+        
+        # Skenario 1: Jika folder icon_launcher kamu berisi subfolder mipmap langsung
+        if [ -d "icon_launcher" ]; then
+          cp -r icon_launcher/* android/app/src/main/res/
+          echo "✅ Ikon berhasil disuntikkan dari folder icon_launcher!"
+        else
+          echo "⚠️ Folder icon_launcher tidak ditemukan, build menggunakan ikon default Android."
+        fi
 
     - name: Build Android Release APK
       run: |
@@ -125,5 +141,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: cakru-tiny-apk
-        # Diubah ke pola wildcard bersih agar mendeteksi semua file berekstensi .apk di folder tersebut
         path: android/app/build/outputs/apk/release/*.apk
