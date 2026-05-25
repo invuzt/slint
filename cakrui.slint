@@ -5,62 +5,62 @@ export component CakruApp inherits Window {
     in-out property <string> message: "";
     callback say-hello;
 
-    // Memastikan seluruh aplikasi mendengarkan ukuran safe area perangkat mobile
-    padding-left: root.safe-area-insets.left;
-    padding-right: root.safe-area-insets.right;
-    padding-top: root.safe-area-insets.top;
-    padding-bottom: root.safe-area-insets.bottom;
+    // Pembungkus utama dipindahkan ke elemen layout agar padding safe-area bekerja dengan benar
+    VerticalLayout {
+        padding-left: root.safe-area-insets.left;
+        padding-right: root.safe-area-insets.right;
+        padding-top: root.safe-area-insets.top;
+        padding-bottom: root.safe-area-insets.bottom;
 
-    // Pembungkus utama agar halaman bisa di-scroll ketika keyboard muncul
-    ScrollView {
-        mouse-drag-pan-enabled: true;
-        width: 100%;
-        height: 100%;
+        ScrollView {
+            mouse-drag-pan-enabled: true;
+            width: 100%;
+            height: 100%;
 
-        VerticalBox {
-            alignment: center;
-            padding: 20px;
-            spacing: 20px;
+            VerticalBox {
+                alignment: center;
+                padding: 20px;
+                spacing: 20px;
 
-            Text {
-                text: "Masukkan Nama Anda";
-                font-size: 24px;
-                color: #2196f3;
-                horizontal-alignment: center;
-            }
-
-            // Membungkus baris input dengan label tersembunyi/aksesibilitas
-            VerticalLayout {
-                spacing: 5px;
-                
-                label := Text {
-                    text: "Nama Lengkap";
-                    font-size: 14px;
-                    color: #757575;
-                    horizontal-alignment: left;
+                Text {
+                    text: "Masukkan Nama Anda";
+                    font-size: 24px;
+                    color: #2196f3;
+                    horizontal-alignment: center;
                 }
 
-                LineEdit {
-                    placeholder-text: "Ketik nama di sini...";
-                    text: name-input;
-                    accessible-label: label.text;
-                    edited => { name-input = self.text; }
+                VerticalLayout {
+                    spacing: 5px;
+                    
+                    label := Text {
+                        text: "Nama Lengkap";
+                        font-size: 14px;
+                        color: #757575;
+                        horizontal-alignment: left;
+                    }
+
+                    LineEdit {
+                        placeholder-text: "Ketik nama di sini...";
+                        text: name-input;
+                        accessible-label: label.text;
+                        edited => { name-input = self.text; }
+                    }
                 }
-            }
 
-            Button {
-                text: "Sapa Saya";
-                clicked => { say-hello(); }
-            }
+                Button {
+                    text: "Sapa Saya";
+                    clicked => { say-hello(); }
+                }
 
-            // Area pesan sambutan
-            Text {
-                text: message;
-                font-size: 20px;
-                color: #4caf50;
-                horizontal-alignment: center;
-                wrap: word;
-                visible: message != "";
+                Text {
+                    text: message;
+                    font-size: 20px;
+                    color: #4caf50;
+                    horizontal-alignment: center;
+                    // PERBAIKAN: Menggunakan enum TextWrap yang benar di Slint
+                    wrap: TextWrap.word-wrap;
+                    visible: message != "";
+                }
             }
         }
     }
