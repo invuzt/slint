@@ -25,7 +25,7 @@ class MainActivity : AppCompatActivity() {
             gravity = Gravity.CENTER_HORIZONTAL
         }
 
-        // Penampung layout aktif (bisa rootLayout, bisa juga Row horizontal nanti)
+        // Penampung layout aktif (bisa rootLayout, bisa juga Row horizontal)
         var currentContainer: LinearLayout = rootLayout
 
         val rawUiData = RustJni.getUiLayout()
@@ -44,17 +44,18 @@ class MainActivity : AppCompatActivity() {
                 currentWidget = trimmed.split(" ")[0]
                 textVal = ""; hintVal = ""; actionVal = ""
                 
-                // JIKA MEMULAI SEBUAH ROW (Bagi layar kanan-kiri)
                 if (currentWidget == "Row") {
                     val rowLayout = LinearLayout(this).apply {
                         orientation = LinearLayout.HORIZONTAL
                         layoutParams = LinearLayout.LayoutParams(
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.WRAP_CONTENT
-                        ).apply { weightSum = 2f } // Dibagi rata menjadi 2 bagian
+                        ).apply { 
+                            setMargins(0, 20, 0, 20)
+                        }
                     }
                     rootLayout.addView(rowLayout)
-                    currentContainer = rowLayout // Pindahkan fokus inject ke dalam Row
+                    currentContainer = rowLayout // Pindahkan fokus ke dalam Row
                 }
             } else if (trimmed.startsWith("text:")) {
                 textVal = trimmed.substringAfter("\"").substringBeforeLast("\"")
@@ -76,25 +77,30 @@ class MainActivity : AppCompatActivity() {
                     "Input" -> {
                         val et = EditText(this).apply {
                             hint = hintVal
-                            layoutParams = LinearLayout.LayoutParams(
-                                0, // diatur 0 karena memakai weight
-                                ViewGroup.LayoutParams.WRAP_CONTENT,
-                                1f
-                            )
+                            // PERBAIKAN: Jika di dalam Row pakai weight, jika di luar pakai MATCH_PARENT
+                            layoutParams = if (currentContainer != rootLayout) {
+                                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                            } else {
+                                LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                                    setMargins(0, 20, 0, 20)
+                                }
+                            }
                         }
                         currentContainer.addView(et)
-                        currentInput = et
+                        currentInput = et // Ambil referensi input aktif
                     }
                     "Button" -> {
                         val btn = Button(this).apply {
                             text = textVal
-                            layoutParams = LinearLayout.LayoutParams(
-                                0, // diatur 0 karena memakai weight
-                                ViewGroup.LayoutParams.WRAP_CONTENT,
-                                1f // Mengambil porsi 1 dari total 2 bagian di Row
-                            )
+                            // PERBAIKAN: Jika di dalam Row bagi rata (weight 1f), jika di luar pakai MATCH_PARENT
+                            layoutParams = if (currentContainer != rootLayout) {
+                                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                            } else {
+                                LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                            }
                             val capturedAction = actionVal
                             setOnClickListener {
+                                // Ambil teks aktual saat tombol diklik
                                 val inputData = currentInput?.text?.toString() ?: ""
                                 val resultFromRust = RustJni.onButtonClick(capturedAction, inputData)
                                 outputTextView?.text = resultFromRust
@@ -103,7 +109,7 @@ class MainActivity : AppCompatActivity() {
                         currentContainer.addView(btn)
                     }
                     "Row" -> {
-                        // Jika blok Row tutup, kembalikan fokus inject ke kontainer utama (Vertikal)
+                        // Kembali ke kontainer utama (Vertikal) setelah Row selesai
                         currentContainer = rootLayout
                     }
                 }
