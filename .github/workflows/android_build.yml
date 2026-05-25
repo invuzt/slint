@@ -20,7 +20,7 @@ jobs:
     - name: Rust Cache
       uses: Swatinem/rust-cache@v2
 
-    # PERBAIKAN: Mengunduh biner binstall langsung dari rilis GitHub resmi (Bebas 404)
+    # Mengunduh biner binstall langsung dari rilis GitHub resmi
     - name: Install cargo-binstall
       run: |
         WANTED_VERSION="v1.10.1"
@@ -29,9 +29,9 @@ jobs:
         tar -xvf cargo-binstall-${ARCH}.tgz
         mv cargo-binstall ~/.cargo/bin/
 
-    # Sekarang kita bisa pakai binstall dengan aman untuk memasang cargo-apk dalam hitungan detik
+    # PERBAIKAN: Menghapus flag --deploy-ids yang bikin error
     - name: Install cargo-apk
-      run: cargo binstall --deploy-ids cargo-apk -y
+      run: cargo binstall cargo-apk -y
 
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
