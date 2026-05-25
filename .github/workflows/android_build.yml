@@ -74,6 +74,16 @@ jobs:
                 versionCode 1
                 versionName "1.0"
             }
+            
+            # --- Bagian Baru: Harmonisasi Target Java 17 ---
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_17
+                targetCompatibility JavaVersion.VERSION_17
+            }
+            kotlinOptions {
+                jvmTarget = '17'
+            }
+            
             buildTypes {
                 release {
                     minifyEnabled true
@@ -107,7 +117,6 @@ jobs:
     - name: Build Android Release APK
       run: |
         cd android
-        # Paksa pasang Gradle Wrapper versi 8.7 yang stabil untuk AGP 8.2.2
         gradle wrapper --gradle-version 8.7
         chmod +x gradlew
         ./gradlew assembleRelease
