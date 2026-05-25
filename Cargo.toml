@@ -7,8 +7,8 @@ edition = "2021"
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
-# OPTIMASI: Mematikan default-features agar compiler hanya fokus merakit biner untuk Android
-slint = { version = "1.16", default-features = false, features = ["backend-android-activity-06", "compat-1-2"] }
+# PERBAIKAN: Menghapus default-features = false agar internal Slint tidak kehilangan modul 'Box' (std)
+slint = { version = "1.16", features = ["backend-android-activity-06"] }
 log = "0.4"
 android_logger = "0.13"
 
@@ -20,7 +20,7 @@ package = "com.cak.cakru"
 label = "Cakru App"
 build_targets = ["aarch64-linux-android"]
 min_sdk_version = 21
-# OPTIMASI: Menaikkan Target SDK agar sesuai dengan standar Android modern (meningkatkan akurasi safe-area & keyboard)
+# Target SDK 34 tetap dipertahankan karena ini aman dan standar modern
 target_sdk_version = 34
 resources = "android-res/res"
 
@@ -30,7 +30,6 @@ icon = "@mipmap/ic_launcher"
 [[package.metadata.android.uses_permission]]
 name = "android.permission.INTERNET"
 
-# STRATEGI OPTIMASI UKURAN BINER (Sudah Sangat Bagus)
 [profile.release]
 opt-level = "z"
 lto = "fat"
