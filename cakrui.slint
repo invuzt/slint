@@ -1,113 +1,14 @@
-import { VerticalBox, LineEdit, ScrollView } from "std-widgets.slint";
+import { ScrollView, VerticalBox } from "std-widgets.slint";
 
-// ==========================================================
-// KANTONG KOMPONEN KUSTOM (Glassmorphism Version)
-// ==========================================================
+// Mengimpor komponen kustom dari folder ui/
+import { CakruTitle } from "ui/layout_ru.slint";
+import { CakruInputField, CakruButton } from "ui/style_ru.slint";
 
-component CakruTitle inherits Text {
-    font-size: 32px;
-    font-weight: 800;
-    color: #2196f3;
-    horizontal-alignment: center;
-}
-
-component CakruInputField inherits VerticalLayout {
-    in property <string> label-text;
-    in property <string> placeholder;
-    in-out property <string> text <=> input.text;
-
-    spacing: 5px;
-
-    Text {
-        text: root.label-text;
-        font-size: 14px;
-        color: #757575;
-        horizontal-alignment: left;
-    }
-
-    input := LineEdit {
-        placeholder-text: root.placeholder;
-        accessible-label: root.label-text;
-    }
-}
-
-// 3. TOMBOL GLASSMORPHISM (Translasi CSS ke Slint)
-component CakruButton inherits Rectangle {
-    in property <string> text;
-    callback clicked;
-
-    // Properti dasar border & radius (border: 1px solid #ccc)
-    border-width: 1px;
-    border-color: #cccccc40; // Semi transparan agar terlihat menyatu
-    border-radius: 5px;
-    
-    // Background glassmorphism semi transparan
-    background: touch-area.has-hover ? rgba(255, 255, 255, 0.15) : rgba(255, 255, 255, 0.08);
-    
-    // Efek Box Shadow dinamis (Makin tebal saat hover)
-    drop-shadow-color: rgba(0, 0, 0, 0.25);
-    drop-shadow-blur: touch-area.has-hover ? 32px : 0px;
-    drop-shadow-offset-x: touch-area.has-hover ? 15px : 0px;
-    drop-shadow-offset-y: touch-area.has-hover ? 30px : 0px;
-
-    // Efek Hover Naik ke Atas (transform: translateY(-10px)) via Padding dinamis
-    padding-top: touch-area.has-hover ? 10px : 20px;
-    padding-bottom: touch-area.has-hover ? 30px : 20px;
-    
-    // Durasi Transisi (transition: 0.5s)
-    animate background, drop-shadow-blur, drop-shadow-offset-x, drop-shadow-offset-y, padding-top, padding-bottom {
-        duration: 500ms;
-        easing: ease-in-out;
-    }
-
-    // Area deteksi sentuhan jari / kursor (cursor: pointer)
-    touch-area := TouchArea {
-        clicked => { root.clicked(); }
-    }
-
-    // Pembungkus konten internal tombol
-    HorizontalLayout {
-        alignment: center;
-        
-        Text {
-            text: root.text;
-            color: #ffffff;
-            font-size: 22px; // Disesuaikan agar pas di layar mobile
-            font-weight: 700;
-            horizontal-alignment: center;
-            vertical-alignment: center;
-            
-            // Catatan: Slint belum mendukung letter-spacing murni, 
-            // jadi kita optimalkan keterbacaannya lewat ukuran font tebal.
-        }
-    }
-
-    // REPLIKA "button:after" (Efek Garis Kilatan Cahaya Linear Gradient)
-    Rectangle {
-        width: 40%;
-        height: 100%;
-        background: @linear-gradient(45deg, transparent 0%, rgba(255,255,255,0.03) 30%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.03) 70%, transparent 100%);
-        
-        // Menggerakkan posisi kilatan cahaya berdasarkan status hover (transition: 0.7s)
-        x: touch-area.has-hover ? parent.width : -parent.width * 0.5;
-        
-        animate x {
-            duration: 700ms;
-            easing: ease-in-out;
-        }
-    }
-}
-
-
-// ==========================================================
-// HALAMAN UTAMA (Tetap Bersih & Responsif)
-// ==========================================================
 export component CakruApp inherits Window {
     in-out property <string> name-input <=> input-field.text;
     in-out property <string> message: "";
     callback say-hello;
 
-    // Memberikan background gelap/gradasi agar efek Glassmorphism tombolnya terlihat kontras
     background: @linear-gradient(180deg, #1a1a2e 0%, #16161a 100%);
 
     VerticalLayout {
@@ -135,7 +36,6 @@ export component CakruApp inherits Window {
                     placeholder: "Ketik nama di sini...";
                 }
 
-                // Memanggil Tombol Ber-efek Glassmorphism kustom kita
                 CakruButton {
                     text: "SAPA SAYA";
                     clicked => { root.say-hello(); }

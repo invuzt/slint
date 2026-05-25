@@ -1,0 +1,72 @@
+import { LineEdit } from "std-widgets.slint";
+
+export component CakruInputField inherits VerticalLayout {
+    in property <string> label-text;
+    in property <string> placeholder;
+    in-out property <string> text <=> input.text;
+
+    spacing: 5px;
+
+    Text {
+        text: root.label-text;
+        font-size: 14px;
+        color: #757575;
+        horizontal-alignment: left;
+    }
+
+    input := LineEdit {
+        placeholder-text: root.placeholder;
+        accessible-label: root.label-text;
+    }
+}
+
+export component CakruButton inherits Rectangle {
+    in property <string> text;
+    callback clicked;
+
+    border-width: 1px;
+    border-color: #cccccc40;
+    border-radius: 5px;
+    background: touch-area.has-hover ? rgba(255, 255, 255, 0.15) : rgba(255, 255, 255, 0.08);
+    
+    drop-shadow-color: rgba(0, 0, 0, 0.25);
+    drop-shadow-blur: touch-area.has-hover ? 32px : 0px;
+    drop-shadow-offset-x: touch-area.has-hover ? 15px : 0px;
+    drop-shadow-offset-y: touch-area.has-hover ? 30px : 0px;
+
+    padding-top: touch-area.has-hover ? 10px : 20px;
+    padding-bottom: touch-area.has-hover ? 30px : 20px;
+    
+    animate background, drop-shadow-blur, drop-shadow-offset-x, drop-shadow-offset-y, padding-top, padding-bottom {
+        duration: 500ms;
+        easing: ease-in-out;
+    }
+
+    touch-area := TouchArea {
+        clicked => { root.clicked(); }
+    }
+
+    HorizontalLayout {
+        alignment: center;
+        Text {
+            text: root.text;
+            color: #ffffff;
+            font-size: 22px;
+            font-weight: 700;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+    }
+
+    // Efek Kilatan Cahaya
+    Rectangle {
+        width: 40%;
+        height: 100%;
+        background: @linear-gradient(45deg, transparent 0%, rgba(255,255,255,0.03) 30%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.03) 70%, transparent 100%);
+        x: touch-area.has-hover ? parent.width : -parent.width * 0.5;
+        animate x {
+            duration: 700ms;
+            easing: ease-in-out;
+        }
+    }
+}
