@@ -15,7 +15,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Kontainer Utama Aplikasi (Vertikal)
         val rootLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(
@@ -26,7 +25,6 @@ class MainActivity : AppCompatActivity() {
             gravity = Gravity.CENTER_HORIZONTAL
         }
 
-        // Gunakan Stack untuk melacak posisi kontainer aktif
         val containerStack = Stack<LinearLayout>()
         containerStack.push(rootLayout)
 
@@ -42,7 +40,6 @@ class MainActivity : AppCompatActivity() {
 
         for (line in lines) {
             val trimmed = line.trim()
-            
             if (trimmed.isEmpty()) continue
 
             if (trimmed.endsWith("{")) {
@@ -55,13 +52,9 @@ class MainActivity : AppCompatActivity() {
                         layoutParams = LinearLayout.LayoutParams(
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.WRAP_CONTENT
-                        ).apply { 
-                            setMargins(0, 20, 0, 20)
-                        }
+                        ).apply { setMargins(0, 20, 0, 20) }
                     }
-                    // Masukkan row baru ke dalam kontainer aktif saat ini
                     containerStack.peek().addView(rowLayout)
-                    // Angkat rowLayout sebagai kontainer aktif yang baru
                     containerStack.push(rowLayout)
                 }
                 continue
@@ -74,17 +67,13 @@ class MainActivity : AppCompatActivity() {
             } else if (trimmed.startsWith("action:")) {
                 actionVal = trimmed.substringAfter("\"").substringBeforeLast("\"")
             } else if (trimmed == "}") {
-                // Jika yang ditutup adalah blok elemen layout seperti Row atau App
+                val activeContainer = containerStack.peek()
+
                 if (currentWidget == "Row" || currentWidget == "App") {
-                    if (containerStack.size > 1) {
-                        containerStack.pop() // Turun satu tingkat ke kontainer induknya
-                    }
+                    if (containerStack.size > 1) containerStack.pop()
                     currentWidget = ""
                     continue
                 }
-
-                // Ambil kontainer yang sedang aktif di puncak stack
-                val activeContainer = containerStack.peek()
 
                 when (currentWidget) {
                     "Text" -> {
@@ -99,7 +88,6 @@ class MainActivity : AppCompatActivity() {
                     "Input" -> {
                         val et = EditText(this).apply {
                             hint = hintVal
-                            // Jika aktif di dalam Row, bagi rata. Jika di luar, penuhi layar.
                             layoutParams = if (containerStack.size > 1 && activeContainer != rootLayout) {
                                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                             } else {
@@ -122,14 +110,13 @@ class MainActivity : AppCompatActivity() {
                             val capturedAction = actionVal
                             setOnClickListener {
                                 val inputData = currentInput?.text?.toString() ?: ""
-                                val resultFromRust = RustJni.onButtonClick(capturedAction, inputData)
+                                val resultFromRust = RustJni.Hub(capturedAction, inputData)
                                 outputTextView?.text = resultFromRust
                             }
                         }
                         activeContainer.addView(btn)
                     }
                 }
-                // Setelah memproses widget non-layout, tandai bahwa kita sedang berada di scope induknya
                 currentWidget = if (containerStack.size > 1) "Row" else "App"
             }
         }

@@ -7,7 +7,6 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-# Kita hanya butuh crate jni untuk jembatan ke Kotlin
 jni = "0.21"
 
 [profile.release]

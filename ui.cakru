@@ -1,7 +1,7 @@
 App {
     Text {
         id: "judul"
-        text: "CakRu App Multi-Tombol"
+        text: "CakRu Arsitektur Permanen"
         size: "28"
         color: "#2196F3"
     }
@@ -11,7 +11,6 @@ App {
         placeholder: "Ketik sesuatu di sini..."
     }
 
-    # --- Ini Tombol Tunggal yang dimasukkan kembali ---
     Button {
         id: "btn_sapa"
         text: "Sapa Saya"
@@ -36,6 +35,12 @@ App {
             text: "Tombol Kanan"
             action: "klik_kanan"
         }
+    }
+
+    Button {
+        id: "btn_clear"
+        text: "Reset Pesan"
+        action: "bersihkan_teks"
     }
 
     Text {

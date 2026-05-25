@@ -1,5 +1,9 @@
 mod parser;
 
+// Trik ajaib mengarahkan modul ke file app_logic.rs yang ada di luar folder src
+#[path = "../app_logic.rs"]
+mod app_logic;
+
 use jni::JNIEnv;
 use jni::objects::{JClass, JString};
 use jni::sys::jstring;
@@ -17,32 +21,18 @@ pub unsafe extern "system" fn Java_com_cak_cakru_RustJni_getUiLayout(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn Java_com_cak_cakru_RustJni_onButtonClick(
+pub unsafe extern "system" fn Java_com_cak_cakru_RustJni_Hub(
     mut env: JNIEnv,
     _class: JClass,
     action: JString,
-    input_text: JString,
+    payload: JString,
 ) -> jstring {
     let action_str: String = env.get_string(&action).unwrap().into();
-    let input_str: String = env.get_string(&input_text).unwrap().into();
+    let payload_str: String = env.get_string(&payload).unwrap().into();
 
-    let mut respon = String::new();
+    // Lempar ke app_logic yang lokasinya sudah kita mapping di atas
+    let hasil_respon = app_logic::handle_action(&action_str, &payload_str);
 
-    // Logika pencocokan 3 tombol sekaligus
-    if action_str == "sapa" {
-        if input_str.trim().is_empty() {
-            respon = "Halo Orang Asing! Ketik namamu dong di atas.".to_string();
-        } else {
-            respon = format!("Halo {}! Selamat datang di ekosistem .cakru 🚀", input_str);
-        }
-    } else if action_str == "klik_kiri" {
-        respon = format!("Kamu menekan Tombol KIRI! Input: {}", input_str);
-    } else if action_str == "klik_kanan" {
-        respon = format!("Kamu menekan Tombol KANAN! Input: {}", input_str);
-    } else {
-        respon = "Aksi tidak dikenali".to_string();
-    }
-
-    let output = env.new_string(respon).unwrap();
+    let output = env.new_string(hasil_respon).unwrap();
     output.into_raw()
 }
