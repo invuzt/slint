@@ -16,11 +16,9 @@ jobs:
       with:
         targets: aarch64-linux-android
 
-    # Mengaktifkan cache tangguh untuk dependensi dan biner kargo
     - name: Rust Cache
       uses: Swatinem/rust-cache@v2
 
-    # Mengunduh biner binstall langsung dari rilis GitHub resmi
     - name: Install cargo-binstall
       run: |
         WANTED_VERSION="v1.10.1"
@@ -29,22 +27,29 @@ jobs:
         tar -xvf cargo-binstall-${ARCH}.tgz
         mv cargo-binstall ~/.cargo/bin/
 
-    # Memasang cargo-apk dengan cepat
     - name: Install cargo-apk
       run: cargo binstall cargo-apk -y
 
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
 
-    # PERBAIKAN: Pasang android-30 (kebutuhan internal cargo-apk) DAN android-34 (target aplikasi) bersamaan
     - name: Install NDK & Platforms
       run: |
         ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --install "platforms;android-30" "platforms;android-34" "ndk;26.1.10909125"
         echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/26.1.10909125" >> $GITHUB_ENV
 
-    - name: Create temporary keystore
+    # TRIK JITU: Buat file debug.keystore tiruan tepat di root folder proyek agar cargo-apk tidak rewel
+    - name: Generate Dummy Debug Keystore
       run: |
-        keytool -genkey -v -keystore temp.keystore -alias temp -storepass temp123 -keypass temp123 -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Temp,O=Temp,C=US"
+        keytool -genkey -v \
+          -keystore debug.keystore \
+          -alias androiddebugkey \
+          -storepass android \
+          -keypass android \
+          -keyalg RSA \
+          -keysize 2048 \
+          -validity 10000 \
+          -dname "CN=Android Debug,O=Android,C=US"
 
     - name: Build release APK
       run: cargo apk build --release
