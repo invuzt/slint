@@ -28,6 +28,13 @@ icon = "@mipmap/ic_launcher"
 [[package.metadata.android.uses_permission]]
 name = "android.permission.INTERNET"
 
+# TRIK AMAN: Memenuhi syarat cargo-apk menggunakan debug key (Aman & Tanpa Password Asli)
+[package.metadata.android.signing.release]
+path = "debug.keystore"
+keystore_password = "android"
+key_alias = "androiddebugkey"
+key_password = "android"
+
 [profile.release]
 opt-level = "z"
 lto = true
