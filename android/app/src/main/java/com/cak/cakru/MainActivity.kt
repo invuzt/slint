@@ -41,7 +41,7 @@ class MainActivity : AppCompatActivity() {
         var actionVal = ""
         var sizeVal = ""
         var colorVal = ""
-        
+
         var lastActiveInput: EditText? = null
 
         for (line in lines) {
@@ -55,6 +55,7 @@ class MainActivity : AppCompatActivity() {
                 if (currentWidget == "Row") {
                     val rowLayout = LinearLayout(this).apply {
                         orientation = LinearLayout.HORIZONTAL
+                        weightSum = 2f // Memastikan distribusi tombol kiri-kanan seimbang
                         layoutParams = LinearLayout.LayoutParams(
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.WRAP_CONTENT
@@ -81,6 +82,7 @@ class MainActivity : AppCompatActivity() {
             } else if (trimmed == "}") {
                 val activeContainer = containerStack.peek()
 
+                // Jika yang ditutup adalah kontainer grup, turunkan stack dan reset widget
                 if (currentWidget == "Row" || currentWidget == "App") {
                     if (containerStack.size > 1) containerStack.pop()
                     currentWidget = ""
@@ -92,7 +94,6 @@ class MainActivity : AppCompatActivity() {
                         val tv = TextView(this).apply {
                             text = textVal
                             textSize = if (sizeVal.isNotEmpty()) sizeVal.toFloat() else 18f
-                            // PERBAIKAN DI SINI: Menggunakan setTextColor() yang valid
                             if (colorVal.isNotEmpty()) {
                                 try { setTextColor(Color.parseColor(colorVal)) } catch (e: Exception) {}
                             }
@@ -104,13 +105,10 @@ class MainActivity : AppCompatActivity() {
                     "Input" -> {
                         val et = EditText(this).apply {
                             hint = hintVal
-                            layoutParams = if (containerStack.size > 1 && activeContainer != rootLayout) {
-                                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
-                            } else {
-                                LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                                    setMargins(0, 20, 0, 20)
-                                }
-                            }
+                            layoutParams = LinearLayout.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT, 
+                                ViewGroup.LayoutParams.WRAP_CONTENT
+                            ).apply { setMargins(0, 20, 0, 20) }
                         }
                         activeContainer.addView(et)
                         if (idVal.isNotEmpty()) viewMap[idVal] = et
@@ -119,10 +117,13 @@ class MainActivity : AppCompatActivity() {
                     "Button" -> {
                         val btn = Button(this).apply {
                             text = textVal
-                            layoutParams = if (containerStack.size > 1 && activeContainer != rootLayout) {
+                            // Jika berada di dalam Row, bagi lebar sama rata menggunakan weight
+                            layoutParams = if (containerStack.size > 1) {
                                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                             } else {
-                                LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                                LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                                    setMargins(0, 10, 0, 10)
+                                }
                             }
                         }
                         activeContainer.addView(btn)
@@ -131,7 +132,8 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 }
-                currentWidget = if (containerStack.size > 1) "Row" else "App"
+                // PERBAIKAN UTAMA: Reset state widget kembali bersih setelah selesai digambar
+                currentWidget = ""
             }
         }
 
