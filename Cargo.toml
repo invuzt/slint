@@ -40,8 +40,8 @@ opt-level = "z"
 lto = true
 codegen-units = 1
 panic = "abort"
-strip = "symbols"
+strip = "true"
 
 [profile.release.package."*"]
 opt-level = "z"
-strip = "true"
+strip = "symbols"
