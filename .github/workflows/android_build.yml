@@ -20,16 +20,23 @@ jobs:
     - name: Rust Cache
       uses: Swatinem/rust-cache@v2
 
-    # OPTIMASI: Pasang cargo-apk menggunakan binstall (unduh biner siap pakai, bukan compile dari awal)
-    - name: Install cargo-apk
+    # PERBAIKAN: Mengunduh biner binstall langsung dari rilis GitHub resmi (Bebas 404)
+    - name: Install cargo-binstall
       run: |
-        curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install.sh | sh
-        cargo binstall --deploy-ids cargo-apk -y
+        WANTED_VERSION="v1.10.1"
+        ARCH="x86_64-unknown-linux-musl"
+        wget https://github.com/cargo-bins/cargo-binstall/releases/download/${WANTED_VERSION}/cargo-binstall-${ARCH}.tgz
+        tar -xvf cargo-binstall-${ARCH}.tgz
+        mv cargo-binstall ~/.cargo/bin/
+
+    # Sekarang kita bisa pakai binstall dengan aman untuk memasang cargo-apk dalam hitungan detik
+    - name: Install cargo-apk
+      run: cargo binstall --deploy-ids cargo-apk -y
 
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
 
-    # OPTIMASI: Selaraskan instalasi platform SDK ke API 34 sesuai Cargo.toml
+    # Selaraskan instalasi platform SDK ke API 34 sesuai Cargo.toml
     - name: Install NDK & Platform 34
       run: |
         ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --install "platforms;android-34" "ndk;26.1.10909125"
