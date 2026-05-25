@@ -29,11 +29,15 @@ class MainActivity : AppCompatActivity() {
         containerStack.push(rootLayout)
 
         val rawUiData = RustJni.getUiLayout()
-        var currentInput: EditText? = null
-        var outputTextView: TextView? = null
+        
+        // Simpan semua referensi view berdasarkan ID-nya agar tidak tertukar
+        val viewMap = HashMap<String, android.view.View>()
+        // Daftarkan juga tombol yang butuh dipasangi aksi setelah loop selesai
+        val buttonActions = ArrayList<Pair<Button, String>>()
 
         val lines = rawUiData.split("\n")
         var currentWidget = ""
+        var idVal = ""
         var textVal = ""
         var hintVal = ""
         var actionVal = ""
@@ -44,7 +48,7 @@ class MainActivity : AppCompatActivity() {
 
             if (trimmed.endsWith("{")) {
                 currentWidget = trimmed.split(" ")[0]
-                textVal = ""; hintVal = ""; actionVal = ""
+                idVal = ""; textVal = ""; hintVal = ""; actionVal = ""
                 
                 if (currentWidget == "Row") {
                     val rowLayout = LinearLayout(this).apply {
@@ -60,7 +64,9 @@ class MainActivity : AppCompatActivity() {
                 continue
             } 
             
-            if (trimmed.startsWith("text:")) {
+            if (trimmed.startsWith("id:")) {
+                idVal = trimmed.substringAfter("\"").substringBeforeLast("\"")
+            } else if (trimmed.startsWith("text:")) {
                 textVal = trimmed.substringAfter("\"").substringBeforeLast("\"")
             } else if (trimmed.startsWith("placeholder:")) {
                 hintVal = trimmed.substringAfter("\"").substringBeforeLast("\"")
@@ -83,7 +89,7 @@ class MainActivity : AppCompatActivity() {
                             setPadding(0, 20, 0, 20)
                         }
                         activeContainer.addView(tv)
-                        outputTextView = tv
+                        if (idVal.isNotEmpty()) viewMap[idVal] = tv
                     }
                     "Input" -> {
                         val et = EditText(this).apply {
@@ -97,7 +103,7 @@ class MainActivity : AppCompatActivity() {
                             }
                         }
                         activeContainer.addView(et)
-                        currentInput = et
+                        if (idVal.isNotEmpty()) viewMap[idVal] = et
                     }
                     "Button" -> {
                         val btn = Button(this).apply {
@@ -107,17 +113,34 @@ class MainActivity : AppCompatActivity() {
                             } else {
                                 LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
                             }
-                            val capturedAction = actionVal
-                            setOnClickListener {
-                                val inputData = currentInput?.text?.toString() ?: ""
-                                val resultFromRust = RustJni.Hub(capturedAction, inputData)
-                                outputTextView?.text = resultFromRust
-                            }
                         }
                         activeContainer.addView(btn)
+                        // Simpan dulu button dan nama aksinya ke list
+                        if (actionVal.isNotEmpty()) {
+                            buttonActions.add(Pair(btn, actionVal))
+                        }
                     }
                 }
                 currentWidget = if (containerStack.size > 1) "Row" else "App"
+            }
+        }
+
+        // SETELAH LAYOUT SELESAI DIBUAT: Pasang fungsi klik dengan target ID yang presisi
+        for (pair in buttonActions) {
+            val btn = pair.first
+            val action = pair.second
+            
+            btn.setOnClickListener {
+                // Ambil data dari input_nama secara spesifik lewat Map ID
+                val inputTarget = viewMap["input_nama"] as? EditText
+                val inputData = inputTarget?.text?.toString() ?: ""
+                
+                // Kirim ke Rust Hub
+                val resultFromRust = RustJni.Hub(action, inputData)
+                
+                // Tembakkan hasilnya khusus ke output_pesan lewat Map ID
+                val outputTarget = viewMap["output_pesan"] as? TextView
+                outputTarget?.text = resultFromRust
             }
         }
 
