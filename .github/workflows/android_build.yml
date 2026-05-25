@@ -99,13 +99,12 @@ jobs:
         INNER_EOF
 
         mkdir -p android/app/src/main
-        # Diperbarui: Menambahkan atribut android:icon dan android:roundIcon pada AndroidManifest.xml
+        # PERBAIKAN: Hanya mendeklarasikan android:icon (menghapus roundIcon agar tidak error)
         cat << 'INNER_EOF' > android/app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android">
             <application
                 android:label="Cakru Tiny"
                 android:icon="@mipmap/ic_launcher"
-                android:roundIcon="@mipmap/ic_launcher_round"
                 android:theme="@style/Theme.AppCompat.Light.NoActionBar">
                 <activity android:name=".MainActivity" android:exported="true">
                     <intent-filter>
@@ -117,17 +116,16 @@ jobs:
         </manifest>
         INNER_EOF
 
-    # PERBAIKAN UTAMA: Menyuntikkan folder ikon launcher ke dalam resource Android sebelum dicompile
+    # PERBAIKAN: Menyesuaikan target copy dari struktur folder asli android-res/res/
     - name: Inject Launcher Icons
       run: |
         mkdir -p android/app/src/main/res
-        
-        # Skenario 1: Jika folder icon_launcher kamu berisi subfolder mipmap langsung
-        if [ -d "icon_launcher" ]; then
-          cp -r icon_launcher/* android/app/src/main/res/
-          echo "✅ Ikon berhasil disuntikkan dari folder icon_launcher!"
+        if [ -d "android-res/res" ]; then
+          cp -r android-res/res/* android/app/src/main/res/
+          echo "✅ Seluruh folder mipmap berisi ic_launcher.png sukses disuntikkan!"
         else
-          echo "⚠️ Folder icon_launcher tidak ditemukan, build menggunakan ikon default Android."
+          echo "⚠️ Folder android-res/res tidak ditemukan!"
+          exit 1
         fi
 
     - name: Build Android Release APK
