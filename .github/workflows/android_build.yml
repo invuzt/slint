@@ -1,8 +1,8 @@
-name: Build Cakru APK
+name: Build Cakru APK Tiny
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, cakrui ] # <--- Sekarang otomatis jalan di kedua branch
   workflow_dispatch:
 
 jobs:
@@ -10,6 +10,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+
+    - name: Setup Java JDK
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17'
 
     - name: Setup Rust
       uses: dtolnay/rust-toolchain@stable
@@ -19,46 +25,93 @@ jobs:
     - name: Rust Cache
       uses: Swatinem/rust-cache@v2
 
-    - name: Install cargo-binstall
-      run: |
-        WANTED_VERSION="v1.10.1"
-        ARCH="x86_64-unknown-linux-musl"
-        wget https://github.com/cargo-bins/cargo-binstall/releases/download/${WANTED_VERSION}/cargo-binstall-${ARCH}.tgz
-        tar -xvf cargo-binstall-${ARCH}.tgz
-        mv cargo-binstall ~/.cargo/bin/
-
-    - name: Install cargo-apk
-      run: cargo binstall cargo-apk -y
-
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
 
-    - name: Install NDK & Platforms
+    - name: Install NDK
       run: |
-        ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --install "platforms;android-30" "platforms;android-34" "ndk;26.1.10909125"
+        ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --install "ndk;26.1.10909125"
         echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/26.1.10909125" >> $GITHUB_ENV
 
-    # TRIK JITU: Buat file debug.keystore tiruan tepat di root folder proyek agar cargo-apk tidak rewel
-    - name: Generate Dummy Debug Keystore
+    # Mengompilasi Rust menjadi file .so library standar Android
+    - name: Build Rust Library (aarch64)
       run: |
-        keytool -genkey -v \
-          -keystore debug.keystore \
-          -alias androiddebugkey \
-          -storepass android \
-          -keypass android \
-          -keyalg RSA \
-          -keysize 2048 \
-          -validity 10000 \
-          -dname "CN=Android Debug,O=Android,C=US"
+        cargo build --target aarch64-linux-android --release
+        # Pindahkan file .so ke dalam struktur folder JNI Android agar bisa dibungkus Gradle
+        mkdir -p android/app/src/main/jniLibs/arm64-v8a
+        cp target/aarch64-linux-android/release/libcakru_app.so android/app/src/main/jniLibs/arm64-v8a/
 
-    - name: Build release APK
-      run: cargo apk build --release
+    # Konfigurasi Gradle Build script minimalis langsung via script untuk menghemat file
+    - name: Inject Minimal Gradle Files
+      run: |
+        cat << 'INNER_EOF' > android/build.gradle
+        buildscript {
+            repositories { google() ; mavenCentral() }
+            dependencies { classpath 'com.android.tools.build:gradle:8.2.2' }
+        }
+        allprojects {
+            repositories { google() ; mavenCentral() }
+        }
+        INNER_EOF
 
-    - name: Remove unaligned APK
-      run: rm -f target/release/apk/*-unaligned.apk
+        cat << 'INNER_EOF' > android/settings.gradle
+        include ':app'
+        INNER_EOF
 
-    - name: Upload APK
+        cat << 'INNER_EOF' > android/app/build.gradle
+        plugins {
+            id 'com.android.application'
+            id 'org.jetbrains.kotlin.android' version '1.9.22'
+        }
+        android {
+            namespace 'com.cak.cakru'
+            compileSdk 34
+            defaultConfig {
+                applicationId "com.cak.cakru"
+                minSdk 21
+                targetSdk 34
+                versionCode 1
+                versionName "1.0"
+            }
+            buildTypes {
+                release {
+                    minifyEnabled true
+                    shrinkResources true
+                    proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+                }
+            }
+        }
+        dependencies {
+            implementation 'androidx.core:core-ktx:1.12.0'
+            implementation 'androidx.appcompat:appcompat:1.6.1'
+        }
+        INNER_EOF
+
+        # Buat AndroidManifest minimalis agar APK valid
+        mkdir -p android/app/src/main
+        cat << 'INNER_EOF' > android/app/src/main/AndroidManifest.xml
+        <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+            <application
+                android:label="Cakru Tiny"
+                android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+                <activity android:name=".MainActivity" android:exported="true">
+                    <intent-filter>
+                        <action android:name="android.intent.action.MAIN" />
+                        <category android:name="android.intent.category.LAUNCHER" />
+                    </intent-filter>
+                </activity>
+            </application>
+        </manifest>
+        INNER_EOF
+
+    - name: Build Android Release APK
+      run: |
+        cd android
+        chmod +x gradlew || gradle wrapper
+        ./gradlew assembleRelease
+
+    - name: Upload Tiny APK
       uses: actions/upload-artifact@v4
       with:
-        name: cakru-app
-        path: target/release/apk/*.apk
+        name: cakru-tiny-apk
+        path: android/app/build/outputs/apk/release/*.apk
