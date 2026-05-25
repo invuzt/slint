@@ -55,7 +55,7 @@ class MainActivity : AppCompatActivity() {
                 if (currentWidget == "Row") {
                     val rowLayout = LinearLayout(this).apply {
                         orientation = LinearLayout.HORIZONTAL
-                        weightSum = 2f // Memastikan distribusi tombol kiri-kanan seimbang
+                        weightSum = 2f
                         layoutParams = LinearLayout.LayoutParams(
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.WRAP_CONTENT
@@ -82,7 +82,6 @@ class MainActivity : AppCompatActivity() {
             } else if (trimmed == "}") {
                 val activeContainer = containerStack.peek()
 
-                // Jika yang ditutup adalah kontainer grup, turunkan stack dan reset widget
                 if (currentWidget == "Row" || currentWidget == "App") {
                     if (containerStack.size > 1) containerStack.pop()
                     currentWidget = ""
@@ -98,6 +97,11 @@ class MainActivity : AppCompatActivity() {
                                 try { setTextColor(Color.parseColor(colorVal)) } catch (e: Exception) {}
                             }
                             setPadding(0, 15, 0, 15)
+                            layoutParams = if (activeContainer.orientation == LinearLayout.HORIZONTAL) {
+                                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                            } else {
+                                LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                            }
                         }
                         activeContainer.addView(tv)
                         if (idVal.isNotEmpty()) viewMap[idVal] = tv
@@ -105,10 +109,13 @@ class MainActivity : AppCompatActivity() {
                     "Input" -> {
                         val et = EditText(this).apply {
                             hint = hintVal
-                            layoutParams = LinearLayout.LayoutParams(
-                                ViewGroup.LayoutParams.MATCH_PARENT, 
-                                ViewGroup.LayoutParams.WRAP_CONTENT
-                            ).apply { setMargins(0, 20, 0, 20) }
+                            layoutParams = if (activeContainer.orientation == LinearLayout.HORIZONTAL) {
+                                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                            } else {
+                                LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                                    setMargins(0, 20, 0, 20)
+                                }
+                            }
                         }
                         activeContainer.addView(et)
                         if (idVal.isNotEmpty()) viewMap[idVal] = et
@@ -117,8 +124,7 @@ class MainActivity : AppCompatActivity() {
                     "Button" -> {
                         val btn = Button(this).apply {
                             text = textVal
-                            // Jika berada di dalam Row, bagi lebar sama rata menggunakan weight
-                            layoutParams = if (containerStack.size > 1) {
+                            layoutParams = if (activeContainer.orientation == LinearLayout.HORIZONTAL) {
                                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                             } else {
                                 LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
@@ -132,7 +138,6 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 }
-                // PERBAIKAN UTAMA: Reset state widget kembali bersih setelah selesai digambar
                 currentWidget = ""
             }
         }

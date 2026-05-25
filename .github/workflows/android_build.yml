@@ -99,7 +99,6 @@ jobs:
         INNER_EOF
 
         mkdir -p android/app/src/main
-        # PERBAIKAN: Hanya mendeklarasikan android:icon (menghapus roundIcon agar tidak error)
         cat << 'INNER_EOF' > android/app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android">
             <application
@@ -116,15 +115,12 @@ jobs:
         </manifest>
         INNER_EOF
 
-    # PERBAIKAN: Menyesuaikan target copy dari struktur folder asli android-res/res/
     - name: Inject Launcher Icons
       run: |
         mkdir -p android/app/src/main/res
         if [ -d "android-res/res" ]; then
           cp -r android-res/res/* android/app/src/main/res/
-          echo "✅ Seluruh folder mipmap berisi ic_launcher.png sukses disuntikkan!"
         else
-          echo "⚠️ Folder android-res/res tidak ditemukan!"
           exit 1
         fi
 
