@@ -4,10 +4,8 @@ use jni::JNIEnv;
 use jni::objects::{JClass, JString};
 use jni::sys::jstring;
 
-// Memuat file ui.cakru ke dalam binary saat compile-time
 const UI_LAYOUT: &str = include_str!("../ui.cakru");
 
-// JNI: Fungsi untuk mengirimkan isi ui.cakru yang sudah di-parse ke Kotlin
 #[no_mangle]
 pub unsafe extern "system" fn Java_com_cak_cakru_RustJni_getUiLayout(
     mut env: JNIEnv,
@@ -18,7 +16,6 @@ pub unsafe extern "system" fn Java_com_cak_cakru_RustJni_getUiLayout(
     output.into_raw()
 }
 
-// JNI: Fungsi untuk memproses aksi/logika tombol dari Kotlin
 #[no_mangle]
 pub unsafe extern "system" fn Java_com_cak_cakru_RustJni_onButtonClick(
     mut env: JNIEnv,
@@ -31,13 +28,13 @@ pub unsafe extern "system" fn Java_com_cak_cakru_RustJni_onButtonClick(
 
     let mut respon = String::new();
 
-    // Jembatan Logika Berdasarkan properti 'action' di ui.cakru
-    if action_str == "say_hello" {
-        if input_str.trim().is_empty() {
-            respon = "Nama tidak boleh kosong!".to_string();
-        } else {
-            respon = format!("Halo {}, Selamat datang di Cakru App!", input_str.trim());
-        }
+    // Logika tombol dinamis diatur di sini
+    if action_str == "klik_kiri" {
+        respon = format!("Kamu menekan Tombol KIRI! Input: {}", input_str);
+    } else if action_str == "klik_kanan" {
+        respon = format!("Kamu menekan Tombol KANAN! Input: {}", input_str);
+    } else {
+        respon = "Aksi tidak dikenali".to_string();
     }
 
     let output = env.new_string(respon).unwrap();

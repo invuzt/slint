@@ -1,22 +1,32 @@
 App {
     Text {
         id: "judul"
-        text: "CakRu App"
+        text: "CakRu App Kanan-Kiri"
         size: "28"
         color: "#2196F3"
     }
+    
+    Row {
+        Button {
+            id: "btn_kiri"
+            text: "Tombol Kiri"
+            action: "klik_kiri"
+        }
+        Button {
+            id: "btn_kanan"
+            text: "Tombol Kanan"
+            action: "klik_kanan"
+        }
+    }
+    
     Input {
         id: "input_nama"
-        placeholder: "Ketik nama di sini..."
+        placeholder: "Ketik sesuatu di sini..."
     }
-    Button {
-        id: "btn_sapa"
-        text: "Sapa Saya"
-        action: "say_hello"
-    }
+    
     Text {
         id: "output_pesan"
-        text: ""
+        text: "Menunggu aksi..."
         size: "20"
         color: "#4CAF50"
     }

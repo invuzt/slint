@@ -14,7 +14,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Buat Layout Utama (Vertical Layout) bawaan Android
+        // Kontainer Utama (Vertikal - dari atas ke bawah)
         val rootLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(
@@ -25,17 +25,15 @@ class MainActivity : AppCompatActivity() {
             gravity = Gravity.CENTER_HORIZONTAL
         }
 
-        // Ambil data layout dari otak Rust
+        // Penampung layout aktif (bisa rootLayout, bisa juga Row horizontal nanti)
+        var currentContainer: LinearLayout = rootLayout
+
         val rawUiData = RustJni.getUiLayout()
-        
         var currentInput: EditText? = null
         var outputTextView: TextView? = null
 
-        // Parser Sederhana di Sisi Kotlin untuk merender Native Views
         val lines = rawUiData.split("\n")
         var currentWidget = ""
-        
-        // Nilai default/temporary untuk menampung data atribut .cakru
         var textVal = ""
         var hintVal = ""
         var actionVal = ""
@@ -45,6 +43,19 @@ class MainActivity : AppCompatActivity() {
             if (trimmed.endsWith("{")) {
                 currentWidget = trimmed.split(" ")[0]
                 textVal = ""; hintVal = ""; actionVal = ""
+                
+                // JIKA MEMULAI SEBUAH ROW (Bagi layar kanan-kiri)
+                if (currentWidget == "Row") {
+                    val rowLayout = LinearLayout(this).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        layoutParams = LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT
+                        ).apply { weightSum = 2f } // Dibagi rata menjadi 2 bagian
+                    }
+                    rootLayout.addView(rowLayout)
+                    currentContainer = rowLayout // Pindahkan fokus inject ke dalam Row
+                }
             } else if (trimmed.startsWith("text:")) {
                 textVal = trimmed.substringAfter("\"").substringBeforeLast("\"")
             } else if (trimmed.startsWith("placeholder:")) {
@@ -52,7 +63,6 @@ class MainActivity : AppCompatActivity() {
             } else if (trimmed.startsWith("action:")) {
                 actionVal = trimmed.substringAfter("\"").substringBeforeLast("\"")
             } else if (trimmed == "}") {
-                // Ketika blok widget tutup, langsung inject ke layar Android
                 when (currentWidget) {
                     "Text" -> {
                         val tv = TextView(this).apply {
@@ -60,34 +70,41 @@ class MainActivity : AppCompatActivity() {
                             textSize = 20f
                             setPadding(0, 20, 0, 20)
                         }
-                        rootLayout.addView(tv)
-                        // Simpan reference textview terakhir untuk wadah output pesan
+                        currentContainer.addView(tv)
                         outputTextView = tv
                     }
                     "Input" -> {
                         val et = EditText(this).apply {
                             hint = hintVal
                             layoutParams = LinearLayout.LayoutParams(
-                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                ViewGroup.LayoutParams.WRAP_CONTENT
+                                0, // diatur 0 karena memakai weight
+                                ViewGroup.LayoutParams.WRAP_CONTENT,
+                                1f
                             )
                         }
-                        rootLayout.addView(et)
+                        currentContainer.addView(et)
                         currentInput = et
                     }
                     "Button" -> {
                         val btn = Button(this).apply {
                             text = textVal
+                            layoutParams = LinearLayout.LayoutParams(
+                                0, // diatur 0 karena memakai weight
+                                ViewGroup.LayoutParams.WRAP_CONTENT,
+                                1f // Mengambil porsi 1 dari total 2 bagian di Row
+                            )
                             val capturedAction = actionVal
                             setOnClickListener {
                                 val inputData = currentInput?.text?.toString() ?: ""
-                                // Panggil otak Rust saat di-klik!
                                 val resultFromRust = RustJni.onButtonClick(capturedAction, inputData)
-                                // Tampilkan hasilnya ke TextView output
                                 outputTextView?.text = resultFromRust
                             }
                         }
-                        rootLayout.addView(btn)
+                        currentContainer.addView(btn)
+                    }
+                    "Row" -> {
+                        // Jika blok Row tutup, kembalikan fokus inject ke kontainer utama (Vertikal)
+                        currentContainer = rootLayout
                     }
                 }
                 currentWidget = ""
