@@ -3,6 +3,7 @@ import { LineEdit } from "std-widgets.slint";
 export component CakruInputField inherits VerticalLayout {
     in property <string> label-text;
     in property <string> placeholder;
+    in property <bool> is-dark; // Menerima status tema
     in-out property <string> text <=> input.text;
 
     spacing: 5px;
@@ -10,7 +11,8 @@ export component CakruInputField inherits VerticalLayout {
     Text {
         text: root.label-text;
         font-size: 14px;
-        color: #757575;
+        // Teks label: Gelap di light mode, Terang di dark mode
+        color: root.is-dark ? #b0b0b0 : #555555;
         horizontal-alignment: left;
     }
 
@@ -22,23 +24,26 @@ export component CakruInputField inherits VerticalLayout {
 
 export component CakruButton inherits Rectangle {
     in property <string> text;
+    in property <bool> is-dark; // Menerima status tema
     callback clicked;
 
     border-width: 1px;
-    border-color: #cccccc40;
+    border-color: root.is-dark ? #cccccc40 : #00000020;
     border-radius: 5px;
-    background: touch-area.has-hover ? rgba(255, 255, 255, 0.15) : rgba(255, 255, 255, 0.08);
     
-    drop-shadow-color: rgba(0, 0, 0, 0.25);
-    drop-shadow-blur: touch-area.has-hover ? 32px : 0px;
-    drop-shadow-offset-x: touch-area.has-hover ? 15px : 0px;
-    drop-shadow-offset-y: touch-area.has-hover ? 30px : 0px;
+    // Warna tombol menyesuaikan tema kaca gelap / terang
+    background: touch-area.has-hover ? 
+        (root.is-dark ? rgba(255, 255, 255, 0.15) : rgba(0, 0, 0, 0.15)) : 
+        (root.is-dark ? rgba(255, 255, 255, 0.08) : rgba(0, 0, 0, 0.05));
+    
+    drop-shadow-color: rgba(0, 0, 0, 0.15);
+    drop-shadow-blur: touch-area.has-hover ? 16px : 0px;
 
     padding-top: touch-area.has-hover ? 10px : 20px;
     padding-bottom: touch-area.has-hover ? 30px : 20px;
     
-    animate background, drop-shadow-blur, drop-shadow-offset-x, drop-shadow-offset-y, padding-top, padding-bottom {
-        duration: 500ms;
+    animate background, drop-shadow-blur, padding-top, padding-bottom {
+        duration: 300ms;
         easing: ease-in-out;
     }
 
@@ -50,23 +55,10 @@ export component CakruButton inherits Rectangle {
         alignment: center;
         Text {
             text: root.text;
-            color: #ffffff;
+            // Teks tombol: Putih di dark mode, Biru Gelap di light mode
+            color: root.is-dark ? #ffffff : #2196f3;
             font-size: 22px;
             font-weight: 700;
-            horizontal-alignment: center;
-            vertical-alignment: center;
-        }
-    }
-
-    // Efek Kilatan Cahaya
-    Rectangle {
-        width: 40%;
-        height: 100%;
-        background: @linear-gradient(45deg, transparent 0%, rgba(255,255,255,0.03) 30%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0.03) 70%, transparent 100%);
-        x: touch-area.has-hover ? parent.width : -parent.width * 0.5;
-        animate x {
-            duration: 700ms;
-            easing: ease-in-out;
         }
     }
 }

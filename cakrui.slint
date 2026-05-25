@@ -1,15 +1,18 @@
 import { ScrollView, VerticalBox } from "std-widgets.slint";
-
-// Mengimpor komponen kustom dari folder ui/
 import { CakruTitle } from "ui/layout_ru.slint";
 import { CakruInputField, CakruButton } from "ui/style_ru.slint";
 
 export component CakruApp inherits Window {
     in-out property <string> name-input <=> input-field.text;
     in-out property <string> message: "";
+    // Variabel pengendali utama tema (diatur oleh Rust)
+    in-out property <bool> is-dark: true; 
     callback say-hello;
 
-    background: @linear-gradient(180deg, #1a1a2e 0%, #16161a 100%);
+    // Background dinamis: Gradasi gelap malam VS Putih bersih abu-abu
+    background: root.is-dark ? 
+        @linear-gradient(180deg, #1a1a2e 0%, #16161a 100__) : 
+        @linear-gradient(180deg, #f5f7fa 0%, #e4e8f0 100__);
 
     VerticalLayout {
         padding-left: root.safe-area-insets.left;
@@ -34,17 +37,19 @@ export component CakruApp inherits Window {
                 input-field := CakruInputField {
                     label-text: "Nama Lengkap";
                     placeholder: "Ketik nama di sini...";
+                    is-dark: root.is-dark; // Oper status ke input
                 }
 
                 CakruButton {
                     text: "SAPA SAYA";
+                    is-dark: root.is-dark; // Oper status ke tombol
                     clicked => { root.say-hello(); }
                 }
 
                 Text {
                     text: root.message;
                     font-size: 20px;
-                    color: #4caf50;
+                    color: root.is-dark ? #4caf50 : #2e7d32;
                     horizontal-alignment: center;
                     wrap: TextWrap.word-wrap;
                     visible: root.message != "";
