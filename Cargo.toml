@@ -44,4 +44,4 @@ strip = "symbols"
 
 [profile.release.package."*"]
 opt-level = "z"
-strip = "symbols"
+strip = "true"
