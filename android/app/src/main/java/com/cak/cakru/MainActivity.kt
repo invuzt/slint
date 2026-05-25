@@ -8,13 +8,14 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import java.util.Stack
 
 class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Kontainer Utama (Vertikal - dari atas ke bawah)
+        // Kontainer Utama Aplikasi (Vertikal)
         val rootLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(
@@ -25,8 +26,9 @@ class MainActivity : AppCompatActivity() {
             gravity = Gravity.CENTER_HORIZONTAL
         }
 
-        // Penampung layout aktif (bisa rootLayout, bisa juga Row horizontal)
-        var currentContainer: LinearLayout = rootLayout
+        // Gunakan Stack untuk melacak posisi kontainer aktif
+        val containerStack = Stack<LinearLayout>()
+        containerStack.push(rootLayout)
 
         val rawUiData = RustJni.getUiLayout()
         var currentInput: EditText? = null
@@ -40,6 +42,9 @@ class MainActivity : AppCompatActivity() {
 
         for (line in lines) {
             val trimmed = line.trim()
+            
+            if (trimmed.isEmpty()) continue
+
             if (trimmed.endsWith("{")) {
                 currentWidget = trimmed.split(" ")[0]
                 textVal = ""; hintVal = ""; actionVal = ""
@@ -54,16 +59,33 @@ class MainActivity : AppCompatActivity() {
                             setMargins(0, 20, 0, 20)
                         }
                     }
-                    rootLayout.addView(rowLayout)
-                    currentContainer = rowLayout // Pindahkan fokus ke dalam Row
+                    // Masukkan row baru ke dalam kontainer aktif saat ini
+                    containerStack.peek().addView(rowLayout)
+                    // Angkat rowLayout sebagai kontainer aktif yang baru
+                    containerStack.push(rowLayout)
                 }
-            } else if (trimmed.startsWith("text:")) {
+                continue
+            } 
+            
+            if (trimmed.startsWith("text:")) {
                 textVal = trimmed.substringAfter("\"").substringBeforeLast("\"")
             } else if (trimmed.startsWith("placeholder:")) {
                 hintVal = trimmed.substringAfter("\"").substringBeforeLast("\"")
             } else if (trimmed.startsWith("action:")) {
                 actionVal = trimmed.substringAfter("\"").substringBeforeLast("\"")
             } else if (trimmed == "}") {
+                // Jika yang ditutup adalah blok elemen layout seperti Row atau App
+                if (currentWidget == "Row" || currentWidget == "App") {
+                    if (containerStack.size > 1) {
+                        containerStack.pop() // Turun satu tingkat ke kontainer induknya
+                    }
+                    currentWidget = ""
+                    continue
+                }
+
+                // Ambil kontainer yang sedang aktif di puncak stack
+                val activeContainer = containerStack.peek()
+
                 when (currentWidget) {
                     "Text" -> {
                         val tv = TextView(this).apply {
@@ -71,14 +93,14 @@ class MainActivity : AppCompatActivity() {
                             textSize = 20f
                             setPadding(0, 20, 0, 20)
                         }
-                        currentContainer.addView(tv)
+                        activeContainer.addView(tv)
                         outputTextView = tv
                     }
                     "Input" -> {
                         val et = EditText(this).apply {
                             hint = hintVal
-                            // PERBAIKAN: Jika di dalam Row pakai weight, jika di luar pakai MATCH_PARENT
-                            layoutParams = if (currentContainer != rootLayout) {
+                            // Jika aktif di dalam Row, bagi rata. Jika di luar, penuhi layar.
+                            layoutParams = if (containerStack.size > 1 && activeContainer != rootLayout) {
                                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                             } else {
                                 LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
@@ -86,34 +108,29 @@ class MainActivity : AppCompatActivity() {
                                 }
                             }
                         }
-                        currentContainer.addView(et)
-                        currentInput = et // Ambil referensi input aktif
+                        activeContainer.addView(et)
+                        currentInput = et
                     }
                     "Button" -> {
                         val btn = Button(this).apply {
                             text = textVal
-                            // PERBAIKAN: Jika di dalam Row bagi rata (weight 1f), jika di luar pakai MATCH_PARENT
-                            layoutParams = if (currentContainer != rootLayout) {
+                            layoutParams = if (containerStack.size > 1 && activeContainer != rootLayout) {
                                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                             } else {
                                 LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
                             }
                             val capturedAction = actionVal
                             setOnClickListener {
-                                // Ambil teks aktual saat tombol diklik
                                 val inputData = currentInput?.text?.toString() ?: ""
                                 val resultFromRust = RustJni.onButtonClick(capturedAction, inputData)
                                 outputTextView?.text = resultFromRust
                             }
                         }
-                        currentContainer.addView(btn)
-                    }
-                    "Row" -> {
-                        // Kembali ke kontainer utama (Vertikal) setelah Row selesai
-                        currentContainer = rootLayout
+                        activeContainer.addView(btn)
                     }
                 }
-                currentWidget = ""
+                // Setelah memproses widget non-layout, tandai bahwa kita sedang berada di scope induknya
+                currentWidget = if (containerStack.size > 1) "Row" else "App"
             }
         }
 
