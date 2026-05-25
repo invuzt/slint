@@ -59,7 +59,7 @@ class MainActivity : AppCompatActivity() {
                         layoutParams = LinearLayout.LayoutParams(
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.WRAP_CONTENT
-                        ).apply { setMargins(0, 20, 0, 20) }
+                        ).apply { setMargins(0, 15, 0, 15) }
                     }
                     containerStack.peek().addView(rowLayout)
                     containerStack.push(rowLayout)
@@ -100,7 +100,9 @@ class MainActivity : AppCompatActivity() {
                             layoutParams = if (activeContainer.orientation == LinearLayout.HORIZONTAL) {
                                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                             } else {
-                                LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                                LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                                    setMargins(0, 15, 0, 15)
+                                }
                             }
                         }
                         activeContainer.addView(tv)
@@ -113,7 +115,7 @@ class MainActivity : AppCompatActivity() {
                                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                             } else {
                                 LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                                    setMargins(0, 20, 0, 20)
+                                    setMargins(0, 15, 0, 15)
                                 }
                             }
                         }
