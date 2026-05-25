@@ -7,7 +7,12 @@ edition = "2021"
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
-slint = { version = "1.16", default-features = false, features = ["backend-android-activity-06"] }
+slint = { version = "1.16", default-features = false, features = [
+    "std",                           # Menyediakan alokasi memori (Box, Vec, dll) agar tidak error
+    "compat-1-2",                    # Memenuhi syarat wajib kompatibilitas Slint
+    "backend-android-activity-06",   # Backend Android utama kamu
+    "renderer-winit-femtovg"         # Engine rendering grafis yang ringan
+] }
 log = "0.4"
 android_logger = "0.13"
 
