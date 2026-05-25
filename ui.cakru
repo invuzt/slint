@@ -1,52 +1,72 @@
 App {
     Text {
         id: "judul"
-        text: "CakRu Arsitektur Permanen"
-        size: "28"
-        color: "#2196F3"
+        text: "CakRu Stress Test UI 🚀"
+        size: "30"
+        color: "#E91E63"
     }
 
     Input {
         id: "input_nama"
-        placeholder: "Ketik sesuatu di sini..."
+        placeholder: "Masukkan parameter tes..."
     }
 
-    Button {
-        id: "btn_sapa"
-        text: "Sapa Saya"
-        action: "sapa"
-    }
-
-    Text {
-        id: "output_pesan"
-        text: "Menunggu aksi..."
-        size: "20"
-        color: "#4CAF50"
-    }
-
+    # Tes Struktur Nested Row Tingkat 1
     Row {
         Button {
             id: "btn_kiri"
-            text: "Tombol Kiri"
+            text: "Kiri Awal"
+            action: "klik_kiri"
+        }
+        
+        # BUM! Sumpal dengan Nested Row Tingkat 2 di dalam Row
+        Row {
+            Button {
+                id: "btn_nested_1"
+                text: "Nested 1"
+                action: "klik_kiri"
+            }
+            Button {
+                id: "btn_nested_2"
+                text: "Nested 2"
+                action: "klik_kanan"
+            }
+        }
+    }
+
+    # Komponen mandiri tepat setelah jebakan kontainer nested
+    Text {
+        id: "output_pesan"
+        text: "Status: Menunggu Uji Kekebalan..."
+        size: "18"
+        color: "#FF9800"
+    }
+
+    # Blok Row standar untuk penyeimbang
+    Row {
+        Button {
+            id: "btn_opsi_a"
+            text: "Opsi A"
             action: "klik_kiri"
         }
         Button {
-            id: "btn_kanan"
-            text: "Tombol Kanan"
+            id: "btn_opsi_b"
+            text: "Opsi B"
             action: "klik_kanan"
         }
     }
 
+    # Tombol aksi tunggal di bagian bawah
     Button {
         id: "btn_clear"
-        text: "Reset Pesan"
+        text: "🔥 Bersihkan Semua State"
         action: "bersihkan_teks"
     }
 
     Text {
         id: "footer"
-        text: "Cakru @ 2026"
-        size: "20"
-        color: "#2196F3"
+        text: "Parser Verifier v2.0 • 2026"
+        size: "14"
+        color: "#9E9E9E"
     }
 }
