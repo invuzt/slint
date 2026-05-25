@@ -1,18 +1,58 @@
 import { VerticalBox, Button, LineEdit, ScrollView } from "std-widgets.slint";
 
+// ==========================================================
+// KANTONG KOMPONEN KUSTOM (Supaya Mudah Dibenahi Nanti)
+// ==========================================================
+
+// 1. Komponen Judul Eksklusif
+component CakruTitle inherits Text {
+    font-size: 32px;
+    font-weight: 800;
+    color: #2196f3;
+    horizontal-alignment: center;
+}
+
+// 2. Komponen Input Teks beserta Labelnya
+component CakruInputField inherits VerticalLayout {
+    in property <string> label-text;
+    in property <string> placeholder;
+    in-out property <string> text <=> input.text; // Sinkronisasi dua arah
+
+    spacing: 5px;
+
+    Text {
+        text: root.label-text;
+        font-size: 14px;
+        color: #757575;
+        horizontal-alignment: left;
+    }
+
+    input := LineEdit {
+        placeholder-text: root.placeholder;
+        accessible-label: root.label-text;
+    }
+}
+
+// 3. Komponen Tombol Kustom (Bisa diatur tema warnanya di sini)
+component CakruButton inherits Button {
+    // Anda bisa menambahkan kustomisasi warna/padding di sini nanti
+}
+
+
+// ==========================================================
+// HALAMAN UTAMA (Menjadi Sangat Bersih & Mudah Dibaca)
+// ==========================================================
 export component CakruApp inherits Window {
-    in-out property <string> name-input: "";
+    in-out property <string> name-input <=> input-field.text;
     in-out property <string> message: "";
     callback say-hello;
 
-    // Menangani Safe Area agar konten tidak terpotong notch/status bar
     VerticalLayout {
         padding-left: root.safe-area-insets.left;
         padding-right: root.safe-area-insets.right;
         padding-top: root.safe-area-insets.top;
         padding-bottom: root.safe-area-insets.bottom;
 
-        // Pembungkus penuh agar halaman bisa di-scroll dengan usapan jari saat keyboard muncul
         ScrollView {
             mouse-drag-pan-enabled: true;
             width: 100%;
@@ -23,44 +63,31 @@ export component CakruApp inherits Window {
                 padding: 20px;
                 spacing: 20px;
 
-                Text {
-                    text: "Masukkan Nama Anda";
-                    font-size: 24px;
-                    color: #2196f3;
-                    horizontal-alignment: center;
+                // Memanggil Komponen Judul
+                CakruTitle { 
+                    text: "CakRu"; 
                 }
 
-                VerticalLayout {
-                    spacing: 5px;
-                    
-                    label := Text {
-                        text: "Nama Lengkap";
-                        font-size: 14px;
-                        color: #757575;
-                        horizontal-alignment: left;
-                    }
-
-                    LineEdit {
-                        placeholder-text: "Ketik nama di sini...";
-                        text: name-input;
-                        accessible-label: label.text;
-                        edited => { name-input = self.text; }
-                    }
+                // Memanggil Komponen Input Teks
+                input-field := CakruInputField {
+                    label-text: "Nama Lengkap";
+                    placeholder: "Ketik nama di sini...";
                 }
 
-                Button {
+                // Memanggil Komponen Tombol
+                CakruButton {
                     text: "Sapa Saya";
-                    clicked => { say-hello(); }
+                    clicked => { root.say-hello(); }
                 }
 
-                // Area pesan sambutan
+                // Area pesan sambutan tetap di bawah
                 Text {
-                    text: message;
+                    text: root.message;
                     font-size: 20px;
                     color: #4caf50;
                     horizontal-alignment: center;
                     wrap: TextWrap.word-wrap;
-                    visible: message != "";
+                    visible: root.message != "";
                 }
             }
         }
