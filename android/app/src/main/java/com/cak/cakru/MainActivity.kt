@@ -10,11 +10,6 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
-import androidx.core.widget.NestedScrollView
-import com.google.android.material.appbar.AppBarLayout
-import com.google.android.material.appbar.AppBarLayout.LayoutParams.SCROLL_FLAG_ENTER_ALWAYS
-import com.google.android.material.appbar.AppBarLayout.LayoutParams.SCROLL_FLAG_SCROLL
 import java.util.Stack
 
 class MainActivity : AppCompatActivity() {
@@ -22,6 +17,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Palet Warna & Ukuran MD3 Modern Murni (Tanpa Library Eksternal)
         val primaryButtonColor = Color.parseColor("#6750A4")
         val buttonTextColor = Color.parseColor("#FFFFFF")
         val inputBackgroundColor = Color.parseColor("#F3EDF7")
@@ -39,60 +35,20 @@ class MainActivity : AppCompatActivity() {
             return (dp * resources.displayMetrics.density).toInt()
         }
 
-        // Menggunakan nama kelas lengkap untuk menghindari ambiguitas import
-        val coordinatorLayout = androidx.coordinatorlayout.widget.CoordinatorLayout(this).apply {
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
-        }
-
-        val appBarLayout = AppBarLayout(this).apply {
-            layoutParams = AppBarLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-            setBackgroundColor(appBarBackgroundColor)
-        }
-
-        val toolbar = Toolbar(this).apply {
-            val params = AppBarLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                dpToPx(appBarHeightDp)
-            ).apply {
-                scrollFlags = SCROLL_FLAG_SCROLL or SCROLL_FLAG_ENTER_ALWAYS
-            }
-            layoutParams = params
-            setTitleTextColor(appBarTextColor)
-        }
-        appBarLayout.addView(toolbar)
-        coordinatorLayout.addView(appBarLayout)
-
-        val nestedScrollView = NestedScrollView(this).apply {
-            val params = androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            ).apply {
-                behavior = AppBarLayout.ScrollingViewBehavior()
-            }
-            layoutParams = params
-        }
-
-        val contentLayout = LinearLayout(this).apply {
+        // Kembali ke LinearLayout Vertikal murni yang stabil
+        val rootLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
+                ViewGroup.LayoutParams.MATCH_PARENT
             )
-            setPadding(0, 20, 0, 50)
+            setPadding(0, 0, 0, 50)
             gravity = Gravity.CENTER_HORIZONTAL
             tag = "App"
         }
-        nestedScrollView.addView(contentLayout)
-        coordinatorLayout.addView(nestedScrollView)
 
         val containerStack = Stack<LinearLayout>()
-        containerStack.push(contentLayout)
+        containerStack.push(rootLayout)
 
         val rawUiData = RustJni.getUiLayout()
         val viewMap = HashMap<String, android.view.View>()
@@ -162,11 +118,23 @@ class MainActivity : AppCompatActivity() {
 
                 when (currentWidget) {
                     "Text" -> {
-                        if (idVal == "judul") {
-                            toolbar.title = textVal
-                        } else {
-                            val tv = TextView(this).apply {
-                                text = textVal
+                        val tv = TextView(this).apply {
+                            text = textVal
+                            
+                            if (idVal == "judul") {
+                                textSize = 22f
+                                setTextColor(appBarTextColor)
+                                setBackgroundColor(appBarBackgroundColor)
+                                setPadding(dpToPx(16), 0, dpToPx(16), 0)
+                                gravity = Gravity.CENTER_VERTICAL or Gravity.START
+                                
+                                layoutParams = LinearLayout.LayoutParams(
+                                    ViewGroup.LayoutParams.MATCH_PARENT, 
+                                    dpToPx(appBarHeightDp)
+                                ).apply {
+                                    setMargins(0, 0, 0, dpToPx(15))
+                                }
+                            } else {
                                 textSize = if (sizeVal.isNotEmpty()) sizeVal.toFloat() else 18f
                                 setTextColor(if (colorVal.isNotEmpty()) Color.parseColor(colorVal) else Color.parseColor("#4A4A4A"))
                                 setPadding(0, 15, 0, 15)
@@ -179,9 +147,9 @@ class MainActivity : AppCompatActivity() {
                                     }
                                 }
                             }
-                            activeContainer.addView(tv)
-                            if (idVal.isNotEmpty()) viewMap[idVal] = tv
                         }
+                        activeContainer.addView(tv)
+                        if (idVal.isNotEmpty()) viewMap[idVal] = tv
                     }
                     "Input" -> {
                         val et = EditText(this).apply {
@@ -266,7 +234,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Cast eksplisit ke android.view.View untuk meloloskan kompilasi dari ambiguitas overload
-        setContentView(coordinatorLayout as android.view.View)
+        setContentView(rootLayout)
     }
 }
