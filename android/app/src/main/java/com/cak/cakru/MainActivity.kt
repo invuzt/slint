@@ -1,6 +1,7 @@
 package com.cak.cakru
 
 import android.graphics.Color
+import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.text.TextUtils
@@ -19,13 +20,14 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Konfigurasi Desain Global MD3 Murni
-        val primaryButtonColor = Color.parseColor("#6750A4")
-        val buttonTextColor = Color.parseColor("#FFFFFF")
+        // Konfigurasi Warna Tema MD3
+        val filledButtonColor = Color.parseColor("#0067FF")
+        val outlinedButtonColor = Color.parseColor("#0067FF")
+        val buttonTextFilledColor = Color.parseColor("#FFFFFF")
         val inputBackgroundColor = Color.parseColor("#F3EDF7")
         val inputIndicatorColor = Color.parseColor("#49454F")
         val appBarBackgroundColor = Color.parseColor("#F3EDF7")
-        val appBarTextColor = Color.parseColor("#1D1B20")
+        val appBarTextColor = Color.parseColor("#1C1B1F")
 
         val buttonHeightDp = 56
         val buttonPaddingHorizontalDp = 24
@@ -37,82 +39,20 @@ class MainActivity : AppCompatActivity() {
             return (dp * resources.displayMetrics.density).toInt()
         }
 
-        // CONTAINER UTAMA (Seluruh Layar HP)
+        // CONTAINER UTAMA LAYAR
         val mainContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
+            setBackgroundColor(Color.parseColor("#FFFFFF"))
         }
 
-        // =========================================================================
-        // MODERN SEARCH APP BAR LAYOUT (Substitusi Judul Polosan)
-        // =========================================================================
-        val searchAppBar = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setBackgroundColor(appBarBackgroundColor)
-            setPadding(dpToPx(8), 0, dpToPx(8), 0) // Margin tipis 4-8dp sesuai blueprint MD3
-            
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, 
-                dpToPx(appBarHeightDp)
-            )
-        }
+        // Tempat menampung Navbar jika nanti ditemukan di ui.cakru
+        var navbarContainer: LinearLayout? = null
 
-        // 1. Icon Hamburger Menu (Rata Kiri)
-        val iconMenu = TextView(this).apply {
-            text = "☰" // Simbol Hamburger Menu Universal
-            textSize = 22f
-            setTextColor(appBarTextColor)
-            gravity = Gravity.CENTER
-            setPadding(dpToPx(12), 0, dpToPx(12), 0)
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
-        }
-        searchAppBar.addView(iconMenu)
-
-        // 2. Search Box / Judul Dinamis (Mengambil Sisa Ruang di Tengah)
-        val searchBox = EditText(this).apply {
-            hint = "Telusuri catatan..."
-            textSize = 16f
-            setHintTextColor(Color.parseColor("#49454F"))
-            setTextColor(appBarTextColor)
-            setBackgroundColor(Color.TRANSPARENT) // Hilangkan garis bawah bawaan EditText biasa
-            gravity = Gravity.CENTER_VERTICAL or Gravity.START
-            setPadding(dpToPx(8), 0, dpToPx(8), 0)
-            
-            // weight = 1f memaksa komponen ini melebar menghabiskan sisa ruang tengah
-            layoutParams = LinearLayout.LayoutParams(
-                0,
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                1f
-            )
-        }
-        searchAppBar.addView(searchBox)
-
-        // 3. Icon Setting (Rata Kanan)
-        val iconSetting = TextView(this).apply {
-            text = "⚙" // Simbol Gear/Setting Universal
-            textSize = 22f
-            setTextColor(appBarTextColor)
-            gravity = Gravity.CENTER
-            setPadding(dpToPx(12), 0, dpToPx(12), 0)
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
-        }
-        searchAppBar.addView(iconSetting)
-
-        // Masukkan Search Bar Baru ke Container Utama paling atas
-        mainContainer.addView(searchAppBar)
-        // =========================================================================
-
-        // SCROLLVIEW MURNI
+        // SCROLLVIEW GLOBAL UNTUK KONTEN UTAMA
         val globalScrollView = ScrollView(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -121,19 +61,18 @@ class MainActivity : AppCompatActivity() {
             isVerticalScrollBarEnabled = true
         }
 
-        // KONTEN LAYOUT
+        // KONTEN UTAMA LAYOUT (Di dalam ScrollView)
         val contentLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
-            setPadding(0, dpToPx(10), 0, dpToPx(40))
-            gravity = Gravity.CENTER_HORIZONTAL
+            setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(40))
+            gravity = Gravity.START
             tag = "App"
         }
         globalScrollView.addView(contentLayout)
-        mainContainer.addView(globalScrollView)
 
         val containerStack = Stack<LinearLayout>()
         containerStack.push(contentLayout)
@@ -152,6 +91,7 @@ class MainActivity : AppCompatActivity() {
         var colorVal = ""
 
         var lastActiveInput: EditText? = null
+        var isInsideNavbar = false
 
         for (line in lines) {
             val trimmed = line.trim()
@@ -161,20 +101,39 @@ class MainActivity : AppCompatActivity() {
                 currentWidget = trimmed.split(" ")[0]
                 idVal = ""; textVal = ""; hintVal = ""; actionVal = ""; sizeVal = ""; colorVal = ""
 
-                if (currentWidget == "Row") {
-                    val rowLayout = LinearLayout(this).apply {
-                        orientation = LinearLayout.HORIZONTAL
-                        weightSum = 2f
-                        layoutParams = LinearLayout.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.WRAP_CONTENT
-                        ).apply { 
-                            setMargins(dpToPx(16), dpToPx(10), dpToPx(16), dpToPx(10)) 
+                when (currentWidget) {
+                    "Navbar" -> {
+                        isInsideNavbar = true
+                        navbarContainer = LinearLayout(this).apply {
+                            orientation = LinearLayout.VERTICAL
+                            setBackgroundColor(appBarBackgroundColor)
+                            setPadding(dpToPx(8), 0, dpToPx(8), 0)
+                            layoutParams = LinearLayout.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                dpToPx(appBarHeightDp)
+                            )
+                            tag = "Navbar"
                         }
-                        tag = "Row"
+                        // Langsung masukkan ke posisi paling atas layar (di luar scroll)
+                        mainContainer.addView(navbarContainer)
+                        containerStack.push(navbarContainer)
                     }
-                    containerStack.peek().addView(rowLayout)
-                    containerStack.push(rowLayout)
+                    "Row" -> {
+                        val parentContainer = containerStack.peek()
+                        val rowLayout = LinearLayout(this).apply {
+                            orientation = LinearLayout.HORIZONTAL
+                            gravity = Gravity.CENTER_VERTICAL
+                            layoutParams = LinearLayout.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                if (isInsideNavbar) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT
+                            ).apply {
+                                if (!isInsideNavbar) setMargins(0, dpToPx(20), 0, dpToPx(10))
+                            }
+                            tag = "Row"
+                        }
+                        parentContainer.addView(rowLayout)
+                        containerStack.push(rowLayout)
+                    }
                 }
                 continue
             }
@@ -195,7 +154,8 @@ class MainActivity : AppCompatActivity() {
                 val activeContainer = containerStack.peek()
                 val containerType = activeContainer.tag as? String
 
-                if (containerType == "Row" && currentWidget == "") {
+                if ((containerType == "Row" || containerType == "Navbar") && currentWidget == "") {
+                    if (containerType == "Navbar") isInsideNavbar = false
                     if (containerStack.size > 1) containerStack.pop()
                     currentWidget = ""
                     continue
@@ -206,54 +166,69 @@ class MainActivity : AppCompatActivity() {
 
                 when (currentWidget) {
                     "Text" -> {
-                        if (idVal == "judul") {
-                            // Jika berkas UI dari Rust mengirim teks judul, jadikan teks tersebut placeholder pencarian
-                            searchBox.hint = textVal
-                        } else {
-                            val tv = TextView(this).apply {
-                                text = textVal
+                        val tv = TextView(this).apply {
+                            text = textVal
+                            
+                            if (isInsideNavbar) {
+                                // Jika teks berada di dalam navbar, otomatis jadi icon bergaya tombol murni
+                                textSize = 22f
+                                setTextColor(appBarTextColor)
+                                gravity = Gravity.CENTER
+                                setPadding(dpToPx(12), 0, dpToPx(12), 0)
+                                layoutParams = LinearLayout.LayoutParams(
+                                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                                    ViewGroup.LayoutParams.MATCH_PARENT
+                                )
+                            } else {
+                                // Teks biasa di area konten (subjudul dll)
                                 textSize = if (sizeVal.isNotEmpty()) sizeVal.toFloat() else 18f
-                                setTextColor(if (colorVal.isNotEmpty()) Color.parseColor(colorVal) else Color.parseColor("#4A4A4A"))
-                                setPadding(0, 15, 0, 15)
-                                
-                                layoutParams = if (activeContainer.orientation == LinearLayout.HORIZONTAL) {
-                                    LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                                setTextColor(if (colorVal.isNotEmpty()) Color.parseColor(colorVal) else Color.parseColor("#1C1B1F"))
+                                if (idVal == "sub_judul") {
+                                    textSize = 20f
+                                    setPadding(0, dpToPx(8), 0, dpToPx(16))
                                 } else {
-                                    LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                                        setMargins(dpToPx(16), dpToPx(10), dpToPx(16), dpToPx(10))
-                                    }
+                                    setPadding(0, dpToPx(8), 0, dpToPx(8))
                                 }
+                                layoutParams = LinearLayout.LayoutParams(
+                                    if (activeContainer.orientation == LinearLayout.HORIZONTAL) 0 else ViewGroup.LayoutParams.MATCH_PARENT,
+                                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                                    if (activeContainer.orientation == LinearLayout.HORIZONTAL) 1f else 0f
+                                )
                             }
-                            activeContainer.addView(tv)
-                            if (idVal.isNotEmpty()) viewMap[idVal] = tv
                         }
+                        activeContainer.addView(tv)
+                        if (idVal.isNotEmpty()) viewMap[idVal] = tv
                     }
                     "Input" -> {
                         val et = EditText(this).apply {
-                            hint = hintVal
+                            hint = hintVal.ifEmpty { trimmed.substringAfter("placeholder: \"", "").substringBefore("\"", "") }
                             textSize = 16f
-                            setHintTextColor(Color.parseColor("#79747E"))
-                            setTextColor(Color.parseColor("#1C1B1F"))
+                            setTextColor(appBarTextColor)
+                            setHintTextColor(Color.parseColor("#49454F"))
                             
-                            val padSide = dpToPx(inputPaddingHorizontalDp)
-                            setPadding(padSide, 0, padSide, 0)
-                            gravity = Gravity.CENTER_VERTICAL
-
-                            val shape = GradientDrawable().apply {
-                                shape = GradientDrawable.RECTANGLE
-                                cornerRadii = floatArrayOf(12f, 12f, 12f, 12f, 0f, 0f, 0f, 0f)
-                                setColor(inputBackgroundColor)
-                                setStroke(dpToPx(1), inputIndicatorColor)
-                            }
-                            background = shape
-
-                            layoutParams = if (activeContainer.orientation == LinearLayout.HORIZONTAL) {
-                                LinearLayout.LayoutParams(0, dpToPx(inputHeightDp), 1f).apply {
-                                    setMargins(5, 0, 5, 0)
-                                }
+                            if (isInsideNavbar) {
+                                // Input khusus di dalam navbar (Search Box Tanpa Border Bawaan)
+                                setBackgroundColor(Color.TRANSPARENT)
+                                gravity = Gravity.CENTER_VERTICAL or Gravity.START
+                                setPadding(dpToPx(8), 0, dpToPx(8), 0)
+                                layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f)
                             } else {
-                                LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dpToPx(inputHeightDp)).apply {
-                                    setMargins(dpToPx(16), dpToPx(10), dpToPx(16), dpToPx(10))
+                                // Input biasa MD3 di dalam area Form konten bawah
+                                val padSide = dpToPx(inputPaddingHorizontalDp)
+                                setPadding(padSide, 0, padSide, 0)
+                                gravity = Gravity.CENTER_VERTICAL
+                                background = GradientDrawable().apply {
+                                    shape = GradientDrawable.RECTANGLE
+                                    cornerRadii = floatArrayOf(12f, 12f, 12f, 12f, 0f, 0f, 0f, 0f)
+                                    setColor(inputBackgroundColor)
+                                    setStroke(dpToPx(1), inputIndicatorColor)
+                                }
+                                layoutParams = LinearLayout.LayoutParams(
+                                    if (activeContainer.orientation == LinearLayout.HORIZONTAL) 0 else ViewGroup.LayoutParams.MATCH_PARENT,
+                                    dpToPx(inputHeightDp),
+                                    if (activeContainer.orientation == LinearLayout.HORIZONTAL) 1f else 0f
+                                ).apply {
+                                    if (!isInsideNavbar) setMargins(0, dpToPx(5), 0, dpToPx(5))
                                 }
                             }
                         }
@@ -264,35 +239,48 @@ class MainActivity : AppCompatActivity() {
                     "Button" -> {
                         val btn = Button(this).apply {
                             text = textVal
-                            setTextColor(buttonTextColor)
                             isAllCaps = false
-                            textSize = 15f
+                            textSize = 16f
+                            typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
                             maxLines = 1
                             ellipsize = TextUtils.TruncateAt.END
 
                             val paddingHorizontal = dpToPx(buttonPaddingHorizontalDp)
                             setPadding(paddingHorizontal, 0, paddingHorizontal, 0)
 
-                            val shape = GradientDrawable().apply {
-                                shape = GradientDrawable.RECTANGLE
-                                cornerRadius = dpToPx(buttonHeightDp / 2).toFloat()
-                                setColor(primaryButtonColor)
-                            }
-                            background = shape
-                            
-                            layoutParams = if (activeContainer.orientation == LinearLayout.HORIZONTAL) {
-                                LinearLayout.LayoutParams(0, dpToPx(buttonHeightDp), 1f).apply {
-                                    setMargins(6, 0, 6, 0)
+                            if (textVal.equals("Cancel", ignoreCase = true) || idVal == "btn_cancel") {
+                                setTextColor(outlinedButtonColor)
+                                background = GradientDrawable().apply {
+                                    shape = GradientDrawable.RECTANGLE
+                                    cornerRadius = dpToPx(buttonHeightDp / 2).toFloat()
+                                    setColor(Color.TRANSPARENT)
+                                    setStroke(dpToPx(2), outlinedButtonColor)
                                 }
                             } else {
-                                LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dpToPx(buttonHeightDp)).apply {
-                                    setMargins(dpToPx(16), dpToPx(10), dpToPx(16), dpToPx(10))
+                                setTextColor(buttonTextFilledColor)
+                                background = GradientDrawable().apply {
+                                    shape = GradientDrawable.RECTANGLE
+                                    cornerRadius = dpToPx(buttonHeightDp / 2).toFloat()
+                                    setColor(filledButtonColor)
+                                }
+                            }
+                            
+                            layoutParams = LinearLayout.LayoutParams(
+                                if (activeContainer.orientation == LinearLayout.HORIZONTAL) 0 else ViewGroup.LayoutParams.MATCH_PARENT,
+                                dpToPx(buttonHeightDp),
+                                if (activeContainer.orientation == LinearLayout.HORIZONTAL) 1f else 0f
+                            ).apply {
+                                if (activeContainer.orientation == LinearLayout.HORIZONTAL) {
+                                    setMargins(dpToPx(8), 0, dpToPx(8), 0)
+                                } else {
+                                    setMargins(0, dpToPx(10), 0, dpToPx(10))
                                 }
                             }
                         }
                         activeContainer.addView(btn)
-                        if (actionVal.isNotEmpty()) {
-                            buttonActions.add(Triple(btn, actionVal, lastActiveInput))
+                        if (actionVal.isNotEmpty() || idVal.isNotEmpty()) {
+                            val act = if (actionVal.isNotEmpty()) actionVal else idVal
+                            buttonActions.add(Triple(btn, act, lastActiveInput))
                         }
                     }
                 }
@@ -300,6 +288,11 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // Tempelkan ScrollView Konten di bawah tempat Navbar berada
+        mainContainer.addView(globalScrollView)
+        setContentView(mainContainer)
+
+        // Aksi Tombol
         for (triple in buttonActions) {
             val btn = triple.first
             val action = triple.second
@@ -312,7 +305,5 @@ class MainActivity : AppCompatActivity() {
                 outputTarget?.text = resultFromRust
             }
         }
-
-        setContentView(mainContainer)
     }
 }

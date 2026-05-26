@@ -1,72 +1,39 @@
-App {
-    Text {
-        id: "judul"
-        text: "CakRu Stress Test UI 🚀"
-        size: "30"
-        color: "#E91E63"
-    }
-
-    Input {
-        id: "input_nama"
-        placeholder: "Masukkan parameter tes..."
-    }
-
-    # Tes Struktur Nested Row Tingkat 1
+Navbar {
+    id: "top_nav"
     Row {
-        Button {
-            id: "btn_kiri"
-            text: "Kiri Awal"
-            action: "klik_kiri"
+        Text {
+            id: "nav_menu"
+            text: "☰"
         }
-        
-        # BUM! Sumpal dengan Nested Row Tingkat 2 di dalam Row
-        Row {
-            Button {
-                id: "btn_nested_1"
-                text: "Nested 1"
-                action: "klik_kiri"
-            }
-            Button {
-                id: "btn_nested_2"
-                text: "Nested 2"
-                action: "klik_kanan"
-            }
+        Input {
+            id: "nav_search"
+            placeholder: "Telusuri catatan..."
+        }
+        Text {
+            id: "nav_setting"
+            text: "⚙"
         }
     }
+}
 
-    # Komponen mandiri tepat setelah jebakan kontainer nested
-    Text {
-        id: "output_pesan"
-        text: "Status: Menunggu Uji Kekebalan..."
-        size: "18"
-        color: "#FF9800"
-    }
+Text {
+    id: "sub_judul"
+    text: "Do you want to update this app?"
+    size: "20"
+}
 
-    # Blok Row standar untuk penyeimbang
-    Row {
-        Button {
-            id: "btn_opsi_a"
-            text: "Opsi A"
-            action: "klik_kiri"
-        }
-        Button {
-            id: "btn_opsi_b"
-            text: "Opsi B"
-            action: "klik_kanan"
-        }
-    }
-
-    # Tombol aksi tunggal di bagian bawah
+Row {
     Button {
-        id: "btn_clear"
-        text: "🔥 Bersihkan Semua State"
-        action: "bersihkan_teks"
+        id: "btn_cancel"
+        text: "Cancel"
     }
+    Button {
+        id: "btn_update"
+        text: "Update"
+    }
+}
 
-    Text {
-        id: "footer"
-        text: "Parser Verifier v2.0 • 2026"
-        size: "14"
-        color: "#9E9E9E"
-    }
+Text {
+    id: "output_pesan"
+    text: ""
 }
