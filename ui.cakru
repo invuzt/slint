@@ -13,13 +13,13 @@ Drawer {
         size: "16"
     }
     Text {
-        id: "menu_sync"
-        text: "🔄 Sinkronisasi Server API"
+        id: "menu_share"
+        text: "🔄 Bagikan Database (.db)"
         size: "16"
     }
     Text {
         id: "menu_info"
-        text: "ℹ️ Status Gudang: Terhubung"
+        text: "ℹ️ Engine: Rust + SQLite"
         size: "14"
         color: "#79747E"
     }

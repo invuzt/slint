@@ -1,13 +1,14 @@
 package com.cak.cakru
 
 import android.app.AlertDialog
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.InputType
-import android.text.TextUtils
 import android.text.TextWatcher
 import android.util.TypedValue
 import android.view.Gravity
@@ -17,8 +18,11 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import androidx.drawerlayout.widget.DrawerLayout
+import java.io.File
 import java.util.Stack
 
 class MainActivity : AppCompatActivity() {
@@ -322,13 +326,18 @@ class MainActivity : AppCompatActivity() {
                     openGudangManagementDialog()
                     return@setOnClickListener
                 }
-                if (action == "menu_sync") {
-                    drawerLayout.closeDrawer(Gravity.START)
-                    (viewMap["output_pesan"] as? TextView)?.text = "🔄 Memulai sinkronisasi API ke server lokal..."
-                    return@setOnClickListener
-                }
+                
+                // AKSI DINAMIS 1: MENU UTAMA CATAT WARKAH BARU
                 if (action == "menu_input") {
                     drawerLayout.closeDrawer(Gravity.START)
+                    (viewMap["input_range"] as? EditText)?.requestFocus()
+                    return@setOnClickListener
+                }
+
+                // AKSI DINAMIS 2: SHARE DATABASE .DB KELUAR HP VIA ANDROID INTENT
+                if (action == "menu_share") {
+                    drawerLayout.closeDrawer(Gravity.START)
+                    shareDatabaseFile()
                     return@setOnClickListener
                 }
 
@@ -354,7 +363,7 @@ class MainActivity : AppCompatActivity() {
                 if (resultFromRust == "OPEN_DRAWER") {
                     drawerLayout.openDrawer(Gravity.START)
                 } else {
-                    if (isFormSubmit && resultFromRust.startsWith("✅ SUCCESS")) {
+                    if (isFormSubmit && resultFromRust.startsWith("✅ SUKSES")) {
                         (viewMap["output_pesan"] as? TextView)?.text = "✅ Data kardus berhasil direkam!"
                         val tabelTerupdate = resultFromRust.substringAfter("✅ SUKSES\n")
                         (viewMap["tabel_konten"] as? TextView)?.text = tabelTerupdate
@@ -365,6 +374,29 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
+        }
+    }
+
+    // FUNGSI INTI: Membuka dialog Share asli Android untuk mengirim file .db
+    private fun shareDatabaseFile() {
+        val dbFile = File("/storage/emulated/0/Download/arzip_lokal.db")
+        if (!dbFile.exists()) {
+            Toast.makeText(this, "⚠️ File database belum terbentuk. Silakan isi data dahulu!", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        try {
+            // Menggunakan FileProvider internal agar aman dari aturan ketat penyimpanan Android Nougat ke atas
+            val uri: Uri = FileProvider.getUriForFile(this, "${packageName}.fileprovider", dbFile)
+            
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "application/x-sqlite3"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            startActivity(Intent.createChooser(shareIntent, "Bagikan Database ArZip Lokal"))
+        } catch (e: Exception) {
+            Toast.makeText(this, "❌ Gagal membagikan file: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -380,7 +412,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun openGudangManagementDialog() {
         val builder = AlertDialog.Builder(this)
-        builder.setTitle("⚙️ Kel Kelola Master Gudang")
+        builder.setTitle("⚙️ Kelola Master Gudang")
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(40, 20, 40, 20)
