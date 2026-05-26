@@ -10,6 +10,12 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
+import androidx.core.widget.NestedScrollView
+import com.google.android.material.appbar.AppBarLayout
+import com.google.android.material.appbar.CollapsingToolbarLayout
+import com.google.android.material.appbar.AppBarLayout.LayoutParams.SCROLL_FLAG_ENTER_ALWAYS
+import com.google.android.material.appbar.AppBarLayout.LayoutParams.SCROLL_FLAG_SCROLL
 import java.util.Stack
 
 class MainActivity : AppCompatActivity() {
@@ -17,13 +23,10 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Konfigurasi Tema MD3 Global
         val primaryButtonColor = Color.parseColor("#6750A4")
         val buttonTextColor = Color.parseColor("#FFFFFF")
         val inputBackgroundColor = Color.parseColor("#F3EDF7")
         val inputIndicatorColor = Color.parseColor("#49454F")
-        
-        // Warna latar belakang Top App Bar MD3 (Surface Container)
         val appBarBackgroundColor = Color.parseColor("#F3EDF7")
         val appBarTextColor = Color.parseColor("#1D1B20")
 
@@ -33,20 +36,69 @@ class MainActivity : AppCompatActivity() {
         val inputPaddingHorizontalDp = 16
         val appBarHeightDp = 64
 
-        // Root layout diubah padding atasnya menjadi 0 agar App Bar menempel sempurna di atap layar
-        val rootLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(
+        fun dpToPx(dp: Int): Int {
+            return (dp * resources.displayMetrics.density).toInt()
+        }
+
+        // 1. ROOT CONTAINER (Menggunakan CoordinatorLayout untuk mendeteksi scroll behavior)
+        val coordinatorLayout = androidx.coordinatorlayout.widget.CoordinatorLayout(this).apply {
+            layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
-            setPadding(0, 0, 0, 50)
+        }
+
+        // 2. APP BAR LAYOUT (Wadah penampung struktur Toolbar agar bisa sembunyi otomatis)
+        val appBarLayout = AppBarLayout(this).apply {
+            layoutParams = AppBarLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            setBackgroundColor(appBarBackgroundColor)
+        }
+
+        // Toolbar Resmi Android (Bisa dipasang judul bawaan & otomatis mendukung sistem ikon menu)
+        val toolbar = Toolbar(this).apply {
+            val params = AppBarLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                dpToPx(appBarHeightDp)
+            ).apply {
+                // SUNTIKKAN BEHAVIOR: SCROLL | ENTER_ALWAYS (Persis seperti Compose!)
+                scrollFlags = SCROLL_FLAG_SCROLL or SCROLL_FLAG_ENTER_ALWAYS
+            }
+            layoutParams = params
+            setTitleTextColor(appBarTextColor)
+        }
+        appBarLayout.addView(toolbar)
+        coordinatorLayout.addView(appBarLayout)
+
+        // 3. SCROLL CONTAINER (Tempat penampung konten utama yang bisa di-scroll)
+        val nestedScrollView = NestedScrollView(this).apply {
+            val params = androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            ).apply {
+                // Menghubungkan scroll content dengan behavior milik AppBarLayout di atas
+                behavior = AppBarLayout.ScrollingViewBehavior()
+            }
+            layoutParams = params
+        }
+
+        val contentLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            setPadding(0, 20, 0, 50)
             gravity = Gravity.CENTER_HORIZONTAL
             tag = "App"
         }
+        nestedScrollView.addView(contentLayout)
+        coordinatorLayout.addView(nestedScrollView)
 
         val containerStack = Stack<LinearLayout>()
-        containerStack.push(rootLayout)
+        containerStack.push(contentLayout)
 
         val rawUiData = RustJni.getUiLayout()
         val viewMap = HashMap<String, android.view.View>()
@@ -62,10 +114,6 @@ class MainActivity : AppCompatActivity() {
         var colorVal = ""
 
         var lastActiveInput: EditText? = null
-
-        fun dpToPx(dp: Int): Int {
-            return (dp * resources.displayMetrics.density).toInt()
-        }
 
         for (line in lines) {
             val trimmed = line.trim()
@@ -83,7 +131,6 @@ class MainActivity : AppCompatActivity() {
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.WRAP_CONTENT
                         ).apply { 
-                            // Beri margin samping agar tidak menempel ke dinding layar
                             setMargins(dpToPx(16), dpToPx(15), dpToPx(16), dpToPx(15)) 
                         }
                         tag = "Row"
@@ -121,26 +168,12 @@ class MainActivity : AppCompatActivity() {
 
                 when (currentWidget) {
                     "Text" -> {
-                        val tv = TextView(this).apply {
-                            text = textVal
-                            
-                            // Jika ID adalah 'judul', otomatis bertransformasi menjadi MD3 Small Top App Bar
-                            if (idVal == "judul") {
-                                textSize = 22f // Title Large MD3 Standar
-                                setTextColor(appBarTextColor)
-                                setBackgroundColor(appBarBackgroundColor)
-                                // Jarak teks dari kiri (akomodasi ketiadaan ikon kiri = 16dp)
-                                setPadding(dpToPx(16), 0, dpToPx(16), 0)
-                                gravity = Gravity.CENTER_VERTICAL or Gravity.START
-                                
-                                layoutParams = LinearLayout.LayoutParams(
-                                    ViewGroup.LayoutParams.MATCH_PARENT, 
-                                    dpToPx(appBarHeightDp)
-                                ).apply {
-                                    setMargins(0, 0, 0, dpToPx(15)) // Beri jeda ke bawah
-                                }
-                            } else {
-                                // Gaya komponen Text biasa di bawah App Bar
+                        if (idVal == "judul") {
+                            // Masukkan teks langsung ke sistem judul internal Toolbar MD3 resmi
+                            toolbar.title = textVal
+                        } else {
+                            val tv = TextView(this).apply {
+                                text = textVal
                                 textSize = if (sizeVal.isNotEmpty()) sizeVal.toFloat() else 18f
                                 setTextColor(if (colorVal.isNotEmpty()) Color.parseColor(colorVal) else Color.parseColor("#4A4A4A"))
                                 setPadding(0, 15, 0, 15)
@@ -153,9 +186,9 @@ class MainActivity : AppCompatActivity() {
                                     }
                                 }
                             }
+                            activeContainer.addView(tv)
+                            if (idVal.isNotEmpty()) viewMap[idVal] = tv
                         }
-                        activeContainer.addView(tv)
-                        if (idVal.isNotEmpty()) viewMap[idVal] = tv
                     }
                     "Input" -> {
                         val et = EditText(this).apply {
@@ -240,6 +273,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        setContentView(rootLayout)
+        setContentView(coordinatorLayout)
     }
 }
