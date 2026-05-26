@@ -7,7 +7,6 @@ static INIT: std::sync::Once = std::sync::Once::new();
 
 fn init_database() {
     INIT.call_once(|| {
-        // MENGGUNAKAN PATH INTERNAL: Dijamin lolos sandbox Android tanpa crash!
         let db_path = "/data/data/com.cak.cakru/files/arzip_lokal.db";
         let conn = Connection::open(db_path).expect("Gagal membuat file SQLite di folder internal");
         
@@ -22,6 +21,9 @@ fn init_database() {
             )",
             [],
         ).expect("Gagal membuat tabel kardus_arsip");
+
+        // FITUR MIGRASI: Tambah kolom nomor_hak secara aman jika belum ada
+        let _ = conn.execute("ALTER TABLE kardus_arsip ADD COLUMN nomor_hak TEXT DEFAULT ''", []);
 
         conn.execute(
             "CREATE TABLE IF NOT EXISTS master_gudang (
@@ -63,7 +65,7 @@ fn render_table_from_db(query_condition: &str, query_params: &[&dyn rusqlite::To
     let db_slot = DB_CONN.lock().unwrap();
     if let Some(conn) = db_slot.as_ref() {
         let sql = format!(
-            "SELECT gudang, lokasi, start_di, end_di, tahun FROM kardus_arsip {} ORDER BY id DESC LIMIT {}",
+            "SELECT gudang, lokasi, start_di, end_di, tahun, COALESCE(nomor_hak, '') FROM kardus_arsip {} ORDER BY id DESC LIMIT {}",
             query_condition, limit
         );
         
@@ -79,15 +81,17 @@ fn render_table_from_db(query_condition: &str, query_params: &[&dyn rusqlite::To
                 row.get::<_, i32>(2)?,
                 row.get::<_, i32>(3)?,
                 row.get::<_, String>(4)?,
+                row.get::<_, String>(5)?,
             ))
         }).unwrap();
 
         let mut susunan_tabel = Vec::new();
         for (index, item) in rows_iter.enumerate() {
-            if let Ok((gudang, lokasi, start_di, end_di, tahun)) = item {
+            if let Ok((gudang, lokasi, start_di, end_di, tahun, nomor_hak)) = item {
+                let info_hak = if nomor_hak.is_empty() { "".to_string() } else { format!(" | 📑 Hak: {}", nomor_hak) };
                 susunan_tabel.push(format!(
-                    "{}. 📦 Rentang DI.208: {} - {}\n   🏢 Tempat: {}\n   📍 Lokasi/Kardus: {}\n   📅 Tahun: {}\n   ──────────────────────",
-                    index + 1, start_di, end_di, gudang, lokasi, tahun
+                    "{}. 📂 Rentang DI.208: {} - {}\n   🏢 Tempat: {}\n   📍 Lokasi/Kardus: {}\n   📅 Tahun: {}{}\n   ──────────────────────",
+                    index + 1, start_di, end_di, gudang, lokasi, tahun, info_hak
                 ));
             }
         }
@@ -157,14 +161,15 @@ pub fn handle_action(action: &str, payload: &str) -> String {
             let query_angka = payload.trim().parse::<i32>().unwrap_or(-1);
 
             if query_angka != -1 {
+                // SANGAT CERDAS: Cari rentang DI.208 ATAU COCOKKAN jika ada nomor hak yang mirip angka tersebut!
                 render_table_from_db(
-                    "WHERE (?1 >= start_di AND ?1 <= end_di) OR tahun LIKE ?2",
+                    "WHERE (?1 >= start_di AND ?1 <= end_di) OR tahun LIKE ?2 OR nomor_hak LIKE ?2",
                     params![query_angka, query],
                     50
                 )
             } else {
                 render_table_from_db(
-                    "WHERE LOWER(gudang) LIKE ?1 OR LOWER(lokasi) LIKE ?1 OR LOWER(tahun) LIKE ?1",
+                    "WHERE LOWER(gudang) LIKE ?1 OR LOWER(lokasi) LIKE ?1 OR LOWER(tahun) LIKE ?1 OR LOWER(nomor_hak) LIKE ?1",
                     params![query],
                     50
                 )
@@ -173,14 +178,15 @@ pub fn handle_action(action: &str, payload: &str) -> String {
 
         "btn_simpan" => {
             let parts: Vec<&str> = payload.split('|').collect();
-            if parts.len() < 4 || parts[0].is_empty() || parts[1].is_empty() || parts[2].is_empty() || parts[3].is_empty() {
-                return "⚠️ Gagal! Pastikan semua form terisi.".to_string();
+            if parts.len() < 5 || parts[0].is_empty() || parts[1].is_empty() || parts[2].is_empty() || parts[4].is_empty() {
+                return "⚠️ Gagal! Pastikan form Utama, No DI, dan Tahun terisi.".to_string();
             }
 
             let gudang = parts[0].to_string();
             let lokasi = parts[1].to_string();
             let range_str = parts[2].replace(" ", "");
-            let tahun = parts[3].to_string();
+            let nomor_hak = parts[3].trim().to_string(); // Payload baru ke-4
+            let tahun = parts[4].to_string();
 
             let range_parts: Vec<&str> = range_str.split('-').collect();
             let start_di = range_parts.get(0).and_then(|s| s.parse::<i32>().ok()).unwrap_or(0);
@@ -189,8 +195,8 @@ pub fn handle_action(action: &str, payload: &str) -> String {
             let db_slot = DB_CONN.lock().unwrap();
             if let Some(conn) = db_slot.as_ref() {
                 let res_insert = conn.execute(
-                    "INSERT INTO kardus_arsip (gudang, lokasi, start_di, end_di, tahun) VALUES (?1, ?2, ?3, ?4, ?5)",
-                    params![gudang, lokasi, start_di, end_di, tahun],
+                    "INSERT INTO kardus_arsip (gudang, lokasi, start_di, end_di, tahun, nomor_hak) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                    params![gudang, lokasi, start_di, end_di, tahun, nomor_hak],
                 );
 
                 if res_insert.is_ok() {

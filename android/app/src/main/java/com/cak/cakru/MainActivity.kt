@@ -34,7 +34,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Membuat folder "files" terlebih dahulu sebelum dipanggil Rust JNI untuk mencegah IO Error
         val fDir = filesDir
         if (!fDir.exists()) fDir.mkdirs()
 
@@ -279,6 +278,9 @@ class MainActivity : AppCompatActivity() {
                                     }
                                 } else if (idVal == "input_range") {
                                     inputType = InputType.TYPE_CLASS_PHONE
+                                } else if (idVal == "input_hak") {
+                                    // Membuat kapital otomatis untuk memudahkan input HM / HGB
+                                    inputType = InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS
                                 }
                             }
                         }
@@ -348,6 +350,7 @@ class MainActivity : AppCompatActivity() {
                 val inputGudangEt = viewMap["input_gudang"] as? EditText
                 val inputKardusEt = viewMap["input_kardus"] as? EditText
                 val inputRangeEt = viewMap["input_range"] as? EditText
+                val inputHakEt = viewMap["input_hak"] as? EditText
                 val inputTahunEt = viewMap["input_tahun"] as? EditText
 
                 var rangeRaw = inputRangeEt?.text?.toString() ?: ""
@@ -358,8 +361,10 @@ class MainActivity : AppCompatActivity() {
                 val payloadData = if (isFormSubmit) {
                     val gud = inputGudangEt?.text?.toString() ?: ""
                     val lok = inputKardusEt?.text?.toString() ?: ""
+                    val hak = inputHakEt?.text?.toString() ?: ""
                     val thn = inputTahunEt?.text?.toString() ?: ""
-                    "$gud|$lok|$rangeRaw|$thn"
+                    // MENYUNTIKKAN STRUKTUR PAYLOAD BARU: 5 Komponen pipa
+                    "$gud|$lok|$rangeRaw|$hak|$thn"
                 } else ""
 
                 val resultFromRust = RustJni.Hub(action, payloadData)
@@ -368,10 +373,11 @@ class MainActivity : AppCompatActivity() {
                     drawerLayout.openDrawer(Gravity.START)
                 } else {
                     if (isFormSubmit && resultFromRust.startsWith("✅ SUKSES")) {
-                        (viewMap["output_pesan"] as? TextView)?.text = "✅ Data kardus berhasil direkam!"
+                        (viewMap["output_pesan"] as? TextView)?.text = "✅ Data kardus & nomor hak direkam!"
                         val tabelTerupdate = resultFromRust.substringAfter("✅ SUKSES\n")
                         (viewMap["tabel_konten"] as? TextView)?.text = tabelTerupdate
                         inputRangeEt?.setText("")
+                        inputHakEt?.setText("")
                         inputRangeEt?.requestFocus()
                     } else {
                         (viewMap["output_pesan"] as? TextView)?.text = resultFromRust
@@ -382,7 +388,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun shareDatabaseFile() {
-        // AMBIL DARI FOLDER INTERNAL PRIVAT APLIKASI
         val internalDb = File(filesDir, "arzip_lokal.db")
         if (!internalDb.exists()) {
             Toast.makeText(this, "⚠️ File database belum terbentuk. Silakan isi data dahulu!", Toast.LENGTH_LONG).show()
@@ -390,7 +395,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         try {
-            // Salin database internal ke folder cache publik sementara agar legal dibagikan keluar aplikasi
             val exportFile = File(cacheDir, "arzip_lokal.db")
             FileInputStream(internalDb).use { input ->
                 FileOutputStream(exportFile).use { output ->

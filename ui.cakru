@@ -35,7 +35,7 @@ Navbar {
         }
         Input {
             id: "nav_search"
-            placeholder: "Cari No. DI.208 / Tahun / Gudang..."
+            placeholder: "Cari No. DI.208 / Jenis Hak / Nomor Hak..."
         }
         Text {
             id: "nav_setting"
@@ -47,7 +47,7 @@ Navbar {
 # --- FORM UTAMA ---
 Text {
     id: "sub_judul"
-    text: "Pencatatan Cepat ArZip DI.208:"
+    text: "Pencatatan Cepat ArZip DI.208 & Hak:"
     size: "18"
 }
 
@@ -58,18 +58,22 @@ Row {
     }
     Input {
         id: "input_kardus"
-        placeholder: "No. Rak / Kardus"
+        placeholder: "No. Rak / Kardus / Campuran"
     }
 }
 
 Row {
     Input {
         id: "input_range"
-        placeholder: "No DI.208 (Contoh: 3526 3550)"
+        placeholder: "No DI.208 (Contoh: 3526-3550)"
+    }
+    Input {
+        id: "input_hak"
+        placeholder: "Jenis & No. Hak (Contoh: HM 00234)"
     }
     Input {
         id: "input_tahun"
-        placeholder: "Pilih Tahun (Tap untuk Opsi)"
+        placeholder: "Tahun"
     }
 }
 
@@ -82,7 +86,7 @@ Row {
 
 Text {
     id: "output_pesan"
-    text: "Status: Siap menerima entri data."
+    text: "Status: Siap menerima entri data warkah."
 }
 
 # --- TABEL UNTUK LIVE PREVIEW ---
