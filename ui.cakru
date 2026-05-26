@@ -18,40 +18,40 @@ Navbar {
 
 Text {
     id: "sub_judul"
-    text: "Pilih Gudang & Lokasi Penyimpanan:"
+    text: "Pencatatan Cepat ArZip DI.208:"
     size: "18"
 }
 
 Row {
     Input {
         id: "input_gudang"
-        placeholder: "Gudang (Lama / Baru Lnt 1 / Baru Lnt 2)"
+        placeholder: "Pilih Gudang (Tap untuk Opsi)"
     }
     Input {
         id: "input_kardus"
-        placeholder: "Detail Posisi / No. Rak"
+        placeholder: "No. Rak / Kardus"
     }
 }
 
 Row {
     Input {
         id: "input_range"
-        placeholder: "Rentang DI.208 (Contoh: 3526-3550)"
+        placeholder: "No DI.208 (Contoh: 3526 3550)"
     }
     Input {
         id: "input_tahun"
-        placeholder: "Tahun Warkah"
+        placeholder: "Pilih Tahun (Tap untuk Opsi)"
     }
 }
 
 Row {
     Button {
         id: "btn_simpan"
-        text: "Simpan Kardus ke Rust"
+        text: "Simpan & Lanjutkan"
     }
 }
 
 Text {
     id: "output_pesan"
-    text: "Status: Siap memetakan 3 lokasi gudang warkah."
+    text: "Status: Keyboard angka aktif. Pisahkan nomor dengan spasi."
 }

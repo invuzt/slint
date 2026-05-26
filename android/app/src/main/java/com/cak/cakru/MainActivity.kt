@@ -1,10 +1,12 @@
 package com.cak.cakru
 
+import android.app.AlertDialog
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.text.Editable
+import android.text.InputType
 import android.text.TextUtils
 import android.text.TextWatcher
 import android.util.TypedValue
@@ -61,7 +63,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         val menuTitle = TextView(this).apply {
-            text = "ArZip Registry"
+            text = "ArZip Ops"
             textSize = 24f
             setTypeface(null, Typeface.BOLD)
             setTextColor(Color.parseColor("#1C1B1F"))
@@ -176,7 +178,6 @@ class MainActivity : AppCompatActivity() {
                                 isFocusable = true
                                 layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT)
                             } else {
-                                // FIXED: Mengganti '安定' menjadi '16f' (Float murni standar Kotlin)
                                 textSize = if (sizeVal.isNotEmpty()) sizeVal.toFloat() else 16f
                                 setTextColor(if (colorVal.isNotEmpty()) Color.parseColor(colorVal) else Color.parseColor("#1C1B1F"))
                                 setPadding(0, dpToPx(6), 0, dpToPx(6))
@@ -229,6 +230,32 @@ class MainActivity : AppCompatActivity() {
                                     dpToPx(inputHeightDp),
                                     if (activeContainer.orientation == LinearLayout.HORIZONTAL) 1f else 0f
                                 ).apply { setMargins(dpToPx(4), dpToPx(4), dpToPx(4), dpToPx(4)) }
+
+                                // STRATEGI INPUT PINTAR BERDASARKAN ID
+                                if (idVal == "input_gudang") {
+                                    isFocusable = false
+                                    isClickable = true
+                                    setOnClickListener {
+                                        val listGudang = arrayOf("Gudang Lama", "Gudang Baru Lantai 1", "Gudang Baru Lantai 2")
+                                        AlertDialog.Builder(this@MainActivity)
+                                            .setTitle("Pilih Gudang")
+                                            .setItems(listGudang) { _, index -> setText(listGudang[index]) }
+                                            .show()
+                                    }
+                                } else if (idVal == "input_tahun") {
+                                    isFocusable = false
+                                    isClickable = true
+                                    setOnClickListener {
+                                        val listTahun = arrayOf("2026", "2025", "2024", "1990", "1989", "1988")
+                                        AlertDialog.Builder(this@MainActivity)
+                                            .setTitle("Pilih Tahun Warkah")
+                                            .setItems(listTahun) { _, index -> setText(listTahun[index]) }
+                                            .show()
+                                    }
+                                } else if (idVal == "input_range") {
+                                    // AKTIFKAN KEYBOARD ANGKA + SPASI SAJA (Biar ngetik tanpa simbol)
+                                    inputType = InputType.TYPE_CLASS_PHONE
+                                }
                             }
                         }
                         activeContainer.addView(et)
@@ -274,12 +301,23 @@ class MainActivity : AppCompatActivity() {
             val isFormSubmit = triple.third
 
             view.setOnClickListener {
+                val inputGudangEt = viewMap["input_gudang"] as? EditText
+                val inputKardusEt = viewMap["input_kardus"] as? EditText
+                val inputRangeEt = viewMap["input_range"] as? EditText
+                val inputTahunEt = viewMap["input_tahun"] as? EditText
+
+                var rangeRaw = inputRangeEt?.text?.toString() ?: ""
+                
+                // PINTAR: Mengubah otomatis ketikan spasi "3526 3550" menjadi format strip "3526-3550" sebelum dikirim ke Rust
+                if (rangeRaw.contains(" ")) {
+                    rangeRaw = rangeRaw.trim().replace("\\s+".toRegex(), "-")
+                }
+
                 val payloadData = if (isFormSubmit) {
-                    val gud = (viewMap["input_gudang"] as? EditText)?.text?.toString() ?: ""
-                    val lok = (viewMap["input_kardus"] as? EditText)?.text?.toString() ?: ""
-                    val rng = (viewMap["input_range"] as? EditText)?.text?.toString() ?: ""
-                    val thn = (viewMap["input_tahun"] as? EditText)?.text?.toString() ?: ""
-                    "$gud|$lok|$rng|$thn"
+                    val gud = inputGudangEt?.text?.toString() ?: ""
+                    val lok = inputKardusEt?.text?.toString() ?: ""
+                    val thn = inputTahunEt?.text?.toString() ?: ""
+                    "$gud|$lok|$rangeRaw|$thn"
                 } else ""
 
                 val resultFromRust = RustJni.Hub(action, payloadData)
@@ -289,11 +327,11 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     (viewMap["output_pesan"] as? TextView)?.text = resultFromRust
                     
+                    // DESAIN AUTO-STICKY: Kolom Gudang, Rak, dan Tahun TIDAK DIHAPUS. 
+                    // Hanya mengosongkan kolom nomor DI.208 supaya langsung siap isi nomor selanjutnya!
                     if (isFormSubmit && resultFromRust.startsWith("✅")) {
-                        (viewMap["input_gudang"] as? EditText)?.setText("")
-                        (viewMap["input_kardus"] as? EditText)?.setText("")
-                        (viewMap["input_range"] as? EditText)?.setText("")
-                        (viewMap["input_tahun"] as? EditText)?.setText("")
+                        inputRangeEt?.setText("")
+                        inputRangeEt?.requestFocus() // Langsung fokuskan kursor ke kolom nomor lagi
                     }
                 }
             }
