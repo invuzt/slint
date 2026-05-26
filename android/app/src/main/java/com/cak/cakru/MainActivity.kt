@@ -20,21 +20,27 @@ class MainActivity : AppCompatActivity() {
         // Konfigurasi Tema MD3 Global
         val primaryButtonColor = Color.parseColor("#6750A4")
         val buttonTextColor = Color.parseColor("#FFFFFF")
-        val inputBackgroundColor = Color.parseColor("#F3EDF7") // Warna filled input MD3 tipis
-        val inputIndicatorColor = Color.parseColor("#49454F")  // Garis bawah aktif/rekursif
+        val inputBackgroundColor = Color.parseColor("#F3EDF7")
+        val inputIndicatorColor = Color.parseColor("#49454F")
         
+        // Warna latar belakang Top App Bar MD3 (Surface Container)
+        val appBarBackgroundColor = Color.parseColor("#F3EDF7")
+        val appBarTextColor = Color.parseColor("#1D1B20")
+
         val buttonHeightDp = 56
         val buttonPaddingHorizontalDp = 24
         val inputHeightDp = 56
         val inputPaddingHorizontalDp = 16
+        val appBarHeightDp = 64
 
+        // Root layout diubah padding atasnya menjadi 0 agar App Bar menempel sempurna di atap layar
         val rootLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
-            setPadding(50, 50, 50, 50)
+            setPadding(0, 0, 0, 50)
             gravity = Gravity.CENTER_HORIZONTAL
             tag = "App"
         }
@@ -76,7 +82,10 @@ class MainActivity : AppCompatActivity() {
                         layoutParams = LinearLayout.LayoutParams(
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.WRAP_CONTENT
-                        ).apply { setMargins(0, 15, 0, 15) }
+                        ).apply { 
+                            // Beri margin samping agar tidak menempel ke dinding layar
+                            setMargins(dpToPx(16), dpToPx(15), dpToPx(16), dpToPx(15)) 
+                        }
                         tag = "Row"
                     }
                     containerStack.peek().addView(rowLayout)
@@ -114,15 +123,35 @@ class MainActivity : AppCompatActivity() {
                     "Text" -> {
                         val tv = TextView(this).apply {
                             text = textVal
-                            textSize = if (sizeVal.isNotEmpty()) sizeVal.toFloat() else 18f
-                            if (colorVal.isNotEmpty()) {
-                                try { setTextColor(Color.parseColor(colorVal)) } catch (e: Exception) {}
-                            }
-                            setPadding(0, 15, 0, 15)
-                            layoutParams = if (activeContainer.orientation == LinearLayout.HORIZONTAL) {
-                                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                            
+                            // Jika ID adalah 'judul', otomatis bertransformasi menjadi MD3 Small Top App Bar
+                            if (idVal == "judul") {
+                                textSize = 22f // Title Large MD3 Standar
+                                setTextColor(appBarTextColor)
+                                setBackgroundColor(appBarBackgroundColor)
+                                // Jarak teks dari kiri (akomodasi ketiadaan ikon kiri = 16dp)
+                                setPadding(dpToPx(16), 0, dpToPx(16), 0)
+                                gravity = Gravity.CENTER_VERTICAL or Gravity.START
+                                
+                                layoutParams = LinearLayout.LayoutParams(
+                                    ViewGroup.LayoutParams.MATCH_PARENT, 
+                                    dpToPx(appBarHeightDp)
+                                ).apply {
+                                    setMargins(0, 0, 0, dpToPx(15)) // Beri jeda ke bawah
+                                }
                             } else {
-                                LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                                // Gaya komponen Text biasa di bawah App Bar
+                                textSize = if (sizeVal.isNotEmpty()) sizeVal.toFloat() else 18f
+                                setTextColor(if (colorVal.isNotEmpty()) Color.parseColor(colorVal) else Color.parseColor("#4A4A4A"))
+                                setPadding(0, 15, 0, 15)
+                                
+                                layoutParams = if (activeContainer.orientation == LinearLayout.HORIZONTAL) {
+                                    LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                                } else {
+                                    LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                                        setMargins(dpToPx(16), dpToPx(10), dpToPx(16), dpToPx(10))
+                                    }
+                                }
                             }
                         }
                         activeContainer.addView(tv)
@@ -135,18 +164,15 @@ class MainActivity : AppCompatActivity() {
                             setHintTextColor(Color.parseColor("#79747E"))
                             setTextColor(Color.parseColor("#1C1B1F"))
                             
-                            // SET PADDING MD3: Kiri-Kanan 16dp, Atas-Bawah disesuaikan agar teks lurus di tengah
                             val padSide = dpToPx(inputPaddingHorizontalDp)
                             setPadding(padSide, 0, padSide, 0)
                             gravity = Gravity.CENTER_VERTICAL
 
-                            // GAYA FILLED INPUT MD3: Latar ungu muda + Garis bawah 1dp (stroke)
                             val shape = GradientDrawable().apply {
                                 shape = GradientDrawable.RECTANGLE
-                                // Hanya membulatkan sudut atas (top-left dan top-right) sebesar 12px (~4dp)
                                 cornerRadii = floatArrayOf(12f, 12f, 12f, 12f, 0f, 0f, 0f, 0f)
                                 setColor(inputBackgroundColor)
-                                setStroke(dpToPx(1), inputIndicatorColor) // Garis indikator bawah MD3
+                                setStroke(dpToPx(1), inputIndicatorColor)
                             }
                             background = shape
 
@@ -156,7 +182,7 @@ class MainActivity : AppCompatActivity() {
                                 }
                             } else {
                                 LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dpToPx(inputHeightDp)).apply {
-                                    setMargins(0, 15, 0, 15)
+                                    setMargins(dpToPx(16), dpToPx(15), dpToPx(16), dpToPx(15))
                                 }
                             }
                         }
@@ -187,7 +213,7 @@ class MainActivity : AppCompatActivity() {
                                 }
                             } else {
                                 LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dpToPx(buttonHeightDp)).apply {
-                                    setMargins(0, 10, 0, 10)
+                                    setMargins(dpToPx(16), dpToPx(10), dpToPx(16), dpToPx(10))
                                 }
                             }
                         }
