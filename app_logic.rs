@@ -30,7 +30,6 @@ fn init_database() {
             [],
         ).expect("Gagal membuat tabel master_gudang");
 
-        // BLOCK SCOPE 1: Mengisolasi pengisian data default awal
         {
             let mut stmt = conn.prepare("SELECT COUNT(*) FROM master_gudang").unwrap();
             let count: i64 = stmt.query_row([], |row| row.get(0)).unwrap_or(0);
@@ -43,7 +42,6 @@ fn init_database() {
             }
         } 
 
-        // BLOCK SCOPE 2: Mengisolasi pembacaan master gudang ke cache RAM
         {
             let mut stmt_gudang = conn.prepare("SELECT nama_gudang FROM master_gudang").unwrap();
             let gudang_iter = stmt_gudang.query_map([], |row| row.get::<_, String>(0)).unwrap();
@@ -53,9 +51,8 @@ fn init_database() {
                     mg.push(nama);
                 }
             }
-        } // <--- stmt_gudang hancur di sini, koneksi BEBAS dari pinjaman!
+        }
 
-        // Simpan koneksi utuh ke slot global
         let mut db_slot = DB_CONN.lock().unwrap();
         *db_slot = Some(conn);
     });
@@ -64,6 +61,7 @@ fn init_database() {
 fn render_table_from_db(query_condition: &str, query_params: &[&dyn rusqlite::ToSql], limit: usize) -> String {
     let db_slot = DB_CONN.lock().unwrap();
     if let Some(conn) = db_slot.as_ref() {
+        // ID DESC memastikan inputan terbaru (seperti kardus campuran) langsung nangkring di baris teratas!
         let sql = format!(
             "SELECT gudang, lokasi, start_di, end_di, tahun FROM kardus_arsip {} ORDER BY id DESC LIMIT {}",
             query_condition, limit
@@ -87,8 +85,9 @@ fn render_table_from_db(query_condition: &str, query_params: &[&dyn rusqlite::To
         let mut susunan_tabel = Vec::new();
         for (index, item) in rows_iter.enumerate() {
             if let Ok((gudang, lokasi, start_di, end_di, tahun)) = item {
+                // Modifikasi teks tampilan agar informasi lokasi "Campuran" atau nomor kardus terlihat jelas
                 susunan_tabel.push(format!(
-                    "{}. 📦 DI.208: {} - {}\n   🏢 {} | 📍 {}\n   📅 Tahun: {}\n   ──────────────────────",
+                    "{}. 📂 Rentang DI.208: {} - {}\n   🏢 Tempat: {}\n   📍 Lokasi/Kardus: {}\n   📅 Tahun: {}\n   ──────────────────────",
                     index + 1, start_di, end_di, gudang, lokasi, tahun
                 ));
             }
@@ -159,14 +158,15 @@ pub fn handle_action(action: &str, payload: &str) -> String {
             let query_angka = payload.trim().parse::<i32>().unwrap_or(-1);
 
             if query_angka != -1 {
+                // PENYEMPURNAAN QUERY: Cari angka yang berada di dalam rentang berkas manapun!
                 render_table_from_db(
-                    "WHERE ?1 >= start_di AND ?1 <= end_di OR tahun LIKE ?2",
+                    "WHERE (?1 >= start_di AND ?1 <= end_di) OR tahun LIKE ?2",
                     params![query_angka, query],
                     50
                 )
             } else {
                 render_table_from_db(
-                    "WHERE LOWER(gudang) LIKE ?1 OR LOWER(lokasi) LIKE ?1 OR tahun LIKE ?1",
+                    "WHERE LOWER(gudang) LIKE ?1 OR LOWER(lokasi) LIKE ?1 OR LOWER(tahun) LIKE ?1",
                     params![query],
                     50
                 )
