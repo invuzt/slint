@@ -1,18 +1,17 @@
-use rusqlite::{params, Connection, Result};
+use rusqlite::{params, Connection};
 use std::sync::Mutex;
 
-// State untuk menyimpan koneksi database dan master pilihan gudang di memori
 static DB_CONN: Mutex<Option<Connection>> = Mutex::new(None);
 static MASTER_GUDANG: Mutex<Vec<String>> = Mutex::new(Vec::new());
 static INIT: std::sync::Once = std::sync::Once::new();
 
-// Fungsi untuk inisialisasi Database SQLite lokal di dalam HP
 fn init_database() {
     INIT.call_once(|| {
-        // Membuka atau membuat file database SQLite bernama arzip_lokal.db
-        let conn = Connection::open("arzip_lokal.db").expect("Gagal membuat/membuka file SQLite .db");
+        // Simpan langsung file database ke folder Download internal HP
+        let db_path = "/storage/emulated/0/Download/arzip_lokal.db";
         
-        // 1. Buat tabel utama untuk menyimpan data warkah jika belum ada
+        let conn = Connection::open(db_path).expect("Gagal membuat file SQLite di folder Download");
+        
         conn.execute(
             "CREATE TABLE IF NOT EXISTS kardus_arsip (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,7 +24,6 @@ fn init_database() {
             [],
         ).expect("Gagal membuat tabel kardus_arsip");
 
-        // 2. Buat tabel master gudang untuk fitur dinamis tombol setting (⚙️)
         conn.execute(
             "CREATE TABLE IF NOT EXISTS master_gudang (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,18 +32,20 @@ fn init_database() {
             [],
         ).expect("Gagal membuat tabel master_gudang");
 
-        // 3. Masukkan data master bawaan jika tabel master masih kosong (agar user langsung punya opsi awal)
-        let mut stmt = conn.prepare("SELECT COUNT(*) FROM master_gudang").unwrap();
-        let count: i64 = stmt.query_row([], |row| row.get(0)).unwrap_or(0);
-        
-        if count == 0 {
-            let default_gudang = vec!["Gudang Lama", "Gudang Baru Lantai 1", "Gudang Baru Lantai 2"];
-            for g in default_gudang {
-                let _ = conn.execute("INSERT INTO master_gudang (nama_gudang) VALUES (?1)", [g]);
+        // FIX E0505: Mengisolasi scope stmt dan data default agar drop sebelum conn dipindah
+        {
+            let mut stmt = conn.prepare("SELECT COUNT(*) FROM master_gudang").unwrap();
+            let count: i64 = stmt.query_row([], |row| row.get(0)).unwrap_or(0);
+            
+            if count == 0 {
+                let default_gudang = vec!["Gudang Lama", "Gudang Baru Lantai 1", "Gudang Baru Lantai 2"];
+                for g in default_gudang {
+                    let _ = conn.execute("INSERT INTO master_gudang (nama_gudang) VALUES (?1)", [g]);
+                }
             }
-        }
+        } // <--- stmt dan pinjaman (borrow) ke conn otomatis hancur di sini
 
-        // Sinkronkan data master gudang dari SQLite ke dalam cache RAM Rust (MASTER_GUDANG)
+        // Ambil data untuk disimpan ke cache RAM Rust
         let mut stmt_gudang = conn.prepare("SELECT nama_gudang FROM master_gudang").unwrap();
         let gudang_iter = stmt_gudang.query_map([], |row| row.get::<_, String>(0)).unwrap();
         let mut mg = MASTER_GUDANG.lock().unwrap();
@@ -55,13 +55,12 @@ fn init_database() {
             }
         }
 
-        // Simpan koneksi secara permanen di dalam Mutex global
+        // Sekarang conn sudah bersih dari pinjaman, aman untuk di-move!
         let mut db_slot = DB_CONN.lock().unwrap();
         *db_slot = Some(conn);
     });
 }
 
-// Fungsi performa tinggi: Merender list data langsung dari baris query SQLite (Maksimal dikunci demi kecepatan)
 fn render_table_from_db(query_condition: &str, query_params: &[&dyn rusqlite::ToSql], limit: usize) -> String {
     let db_slot = DB_CONN.lock().unwrap();
     if let Some(conn) = db_slot.as_ref() {
@@ -115,7 +114,6 @@ pub fn handle_action(action: &str, payload: &str) -> String {
     match action {
         "nav_menu" => "OPEN_DRAWER".to_string(),
 
-        // Ambil data opsi gudang dari cache RAM untuk dropdown Kotlin
         "nav_setting" => {
             let mg = MASTER_GUDANG.lock().unwrap();
             if mg.is_empty() { "EMPTY".to_string() } else { mg.join("|") }
@@ -127,11 +125,9 @@ pub fn handle_action(action: &str, payload: &str) -> String {
             
             let db_slot = DB_CONN.lock().unwrap();
             if let Some(conn) = db_slot.as_ref() {
-                // Simpan permanen ke tabel master SQLite
                 let _ = conn.execute("INSERT OR IGNORE INTO master_gudang (nama_gudang) VALUES (?1)", [nama_baru]);
             }
             
-            // Update cache RAM
             let mut mg = MASTER_GUDANG.lock().unwrap();
             if !mg.contains(&nama_baru.to_string()) {
                 mg.push(nama_baru.to_string());
@@ -150,21 +146,18 @@ pub fn handle_action(action: &str, payload: &str) -> String {
             if mg.is_empty() { "EMPTY".to_string() } else { mg.join("|") }
         }
 
-        // DI-TRIGGER SAAT APLIKASI PERTAMA BUKA: Ambil 5 data TERBARU dari database (.db)
         "ambil_tabel_awal" => {
             render_table_from_db("", &[], 5)
         }
 
-        // PENCARIAN LIVE DAN SUPER CEPAT BERBASIS INDEX DI SQLITE
         "nav_search" => {
             if payload.is_empty() {
-                return render_table_from_db("", &[], 5); // Jika kosong balik ke 5 data terbaru
+                return render_table_from_db("", &[], 5);
             }
 
             let query = format!("%{}%", payload.trim().to_lowercase());
             let query_angka = payload.trim().parse::<i32>().unwrap_or(-1);
 
-            // Jika yang diketik angka, cari yang memotong rentang start_di s/d end_di
             if query_angka != -1 {
                 render_table_from_db(
                     "WHERE ?1 >= start_di AND ?1 <= end_di OR tahun LIKE ?2",
@@ -172,7 +165,6 @@ pub fn handle_action(action: &str, payload: &str) -> String {
                     50
                 )
             } else {
-                // Jika yang diketik teks, cari berdasarkan nama gudang atau lokasi rak
                 render_table_from_db(
                     "WHERE LOWER(gudang) LIKE ?1 OR LOWER(lokasi) LIKE ?1 OR tahun LIKE ?1",
                     params![query],
@@ -181,7 +173,6 @@ pub fn handle_action(action: &str, payload: &str) -> String {
             }
         }
 
-        // SIMPAN PERMANEN DATA BARU KE SQLITE DATABASE (.db)
         "btn_simpan" => {
             let parts: Vec<&str> = payload.split('|').collect();
             if parts.len() < 4 || parts[0].is_empty() || parts[1].is_empty() || parts[2].is_empty() || parts[3].is_empty() {
@@ -199,19 +190,18 @@ pub fn handle_action(action: &str, payload: &str) -> String {
 
             let db_slot = DB_CONN.lock().unwrap();
             if let Some(conn) = db_slot.as_ref() {
-                // Eksekusi insert baris aman kilat
                 let res_insert = conn.execute(
                     "INSERT INTO kardus_arsip (gudang, lokasi, start_di, end_di, tahun) VALUES (?1, ?2, ?3, ?4, ?5)",
                     params![gudang, lokasi, start_di, end_di, tahun],
                 );
 
                 if res_insert.is_ok() {
-                    // Logika Cerdas: Kembalikan kode sukses disusul render data terupdate langsung dari DB .db
-                    drop(db_slot); // Lepas lock sebelum memanggil fungsi query agar tidak deadlock
+                    drop(db_slot); 
                     return format!("✅ SUKSES\n{}", render_table_from_db("", &[], 5));
                 }
             }
-            "⚠️ Gagal menyimpan ke database lokal internal HP.".to_string()
+            "⚠️ Gagal menyimpan ke database lokal internal HP."
+                .to_string()
         }
 
         _ => format!("Aksi '{}' diterima.", action),
