@@ -37,7 +37,7 @@ class MainActivity : AppCompatActivity() {
             return (dp * resources.displayMetrics.density).toInt()
         }
 
-        // CONTAINER UTAMA (Menampung App Bar tetap statis di atas, dan konten di bawahnya)
+        // CONTAINER UTAMA (Seluruh Layar HP)
         val mainContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(
@@ -46,22 +46,73 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        // APP BAR TEXT (Tetap berada di luar ScrollView agar tidak ikut tergulung)
-        val appBarTitle = TextView(this).apply {
-            textSize = 22f
-            setTextColor(appBarTextColor)
+        // =========================================================================
+        // MODERN SEARCH APP BAR LAYOUT (Substitusi Judul Polosan)
+        // =========================================================================
+        val searchAppBar = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
             setBackgroundColor(appBarBackgroundColor)
-            setPadding(dpToPx(16), 0, dpToPx(16), 0)
-            gravity = Gravity.CENTER_VERTICAL or Gravity.START
+            setPadding(dpToPx(8), 0, dpToPx(8), 0) // Margin tipis 4-8dp sesuai blueprint MD3
             
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, 
                 dpToPx(appBarHeightDp)
             )
         }
-        mainContainer.addView(appBarTitle)
 
-        // SCROLLVIEW MURNI (Mengizinkan seluruh komponen di bawah judul bisa di-scroll ke bawah)
+        // 1. Icon Hamburger Menu (Rata Kiri)
+        val iconMenu = TextView(this).apply {
+            text = "☰" // Simbol Hamburger Menu Universal
+            textSize = 22f
+            setTextColor(appBarTextColor)
+            gravity = Gravity.CENTER
+            setPadding(dpToPx(12), 0, dpToPx(12), 0)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        }
+        searchAppBar.addView(iconMenu)
+
+        // 2. Search Box / Judul Dinamis (Mengambil Sisa Ruang di Tengah)
+        val searchBox = EditText(this).apply {
+            hint = "Telusuri catatan..."
+            textSize = 16f
+            setHintTextColor(Color.parseColor("#49454F"))
+            setTextColor(appBarTextColor)
+            setBackgroundColor(Color.TRANSPARENT) // Hilangkan garis bawah bawaan EditText biasa
+            gravity = Gravity.CENTER_VERTICAL or Gravity.START
+            setPadding(dpToPx(8), 0, dpToPx(8), 0)
+            
+            // weight = 1f memaksa komponen ini melebar menghabiskan sisa ruang tengah
+            layoutParams = LinearLayout.LayoutParams(
+                0,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                1f
+            )
+        }
+        searchAppBar.addView(searchBox)
+
+        // 3. Icon Setting (Rata Kanan)
+        val iconSetting = TextView(this).apply {
+            text = "⚙" // Simbol Gear/Setting Universal
+            textSize = 22f
+            setTextColor(appBarTextColor)
+            gravity = Gravity.CENTER
+            setPadding(dpToPx(12), 0, dpToPx(12), 0)
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        }
+        searchAppBar.addView(iconSetting)
+
+        // Masukkan Search Bar Baru ke Container Utama paling atas
+        mainContainer.addView(searchAppBar)
+        // =========================================================================
+
+        // SCROLLVIEW MURNI
         val globalScrollView = ScrollView(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -70,7 +121,7 @@ class MainActivity : AppCompatActivity() {
             isVerticalScrollBarEnabled = true
         }
 
-        // KONTEN LAYOUT (Berada di dalam ScrollView)
+        // KONTEN LAYOUT
         val contentLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(
@@ -156,7 +207,8 @@ class MainActivity : AppCompatActivity() {
                 when (currentWidget) {
                     "Text" -> {
                         if (idVal == "judul") {
-                            appBarTitle.text = textVal
+                            // Jika berkas UI dari Rust mengirim teks judul, jadikan teks tersebut placeholder pencarian
+                            searchBox.hint = textVal
                         } else {
                             val tv = TextView(this).apply {
                                 text = textVal
@@ -215,8 +267,6 @@ class MainActivity : AppCompatActivity() {
                             setTextColor(buttonTextColor)
                             isAllCaps = false
                             textSize = 15f
-                            
-                            // Mencegah teks tombol meluber keluar: Potong teks panjang dengan tanda "..." di tengah/akhir
                             maxLines = 1
                             ellipsize = TextUtils.TruncateAt.END
 
@@ -232,7 +282,7 @@ class MainActivity : AppCompatActivity() {
                             
                             layoutParams = if (activeContainer.orientation == LinearLayout.HORIZONTAL) {
                                 LinearLayout.LayoutParams(0, dpToPx(buttonHeightDp), 1f).apply {
-                                    setMargins(6, 0, 6, 0) // Jarak tipis antar tombol di dalam Row
+                                    setMargins(6, 0, 6, 0)
                                 }
                             } else {
                                 LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dpToPx(buttonHeightDp)).apply {
