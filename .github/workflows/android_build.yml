@@ -2,7 +2,7 @@ name: Build Cakru APK Tiny
 
 on:
   push:
-    branches: [ main, cakrui ]
+    branches: [ main, cakrui, ArZip ]
   workflow_dispatch:
 
 jobs:
@@ -74,7 +74,6 @@ jobs:
                 versionCode 1
                 versionName "1.0"
             }
-
             compileOptions {
                 sourceCompatibility JavaVersion.VERSION_17
                 targetCompatibility JavaVersion.VERSION_17
@@ -82,7 +81,6 @@ jobs:
             kotlinOptions {
                 jvmTarget = '17'
             }
-
             buildTypes {
                 release {
                     minifyEnabled true
@@ -95,6 +93,8 @@ jobs:
         dependencies {
             implementation 'androidx.core:core-ktx:1.12.0'
             implementation 'androidx.appcompat:appcompat:1.6.1'
+            // Ditambahkan agar DrawerLayout (Menu Samping) dikenali saat compile APK
+            implementation 'androidx.drawerlayout:drawerlayout:1.1.1'
         }
         INNER_EOF
 
@@ -102,7 +102,7 @@ jobs:
         cat << 'INNER_EOF' > android/app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android">
             <application
-                android:label="Cakru Tiny"
+                android:label="ArZip"
                 android:icon="@mipmap/ic_launcher"
                 android:theme="@style/Theme.AppCompat.Light.NoActionBar">
                 <activity android:name=".MainActivity" android:exported="true">
@@ -134,5 +134,5 @@ jobs:
     - name: Upload Tiny APK
       uses: actions/upload-artifact@v4
       with:
-        name: cakru-tiny-apk
+        name: arzip-warkah-apk
         path: android/app/build/outputs/apk/release/*.apk
