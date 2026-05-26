@@ -3,11 +3,13 @@ package com.cak.cakru
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.text.TextUtils
 import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import java.util.Stack
@@ -17,7 +19,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Palet Warna & Ukuran MD3 Modern Murni (Tanpa Library Eksternal)
+        // Konfigurasi Desain Global MD3 Murni
         val primaryButtonColor = Color.parseColor("#6750A4")
         val buttonTextColor = Color.parseColor("#FFFFFF")
         val inputBackgroundColor = Color.parseColor("#F3EDF7")
@@ -35,20 +37,55 @@ class MainActivity : AppCompatActivity() {
             return (dp * resources.displayMetrics.density).toInt()
         }
 
-        // Kembali ke LinearLayout Vertikal murni yang stabil
-        val rootLayout = LinearLayout(this).apply {
+        // CONTAINER UTAMA (Menampung App Bar tetap statis di atas, dan konten di bawahnya)
+        val mainContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             )
-            setPadding(0, 0, 0, 50)
+        }
+
+        // APP BAR TEXT (Tetap berada di luar ScrollView agar tidak ikut tergulung)
+        val appBarTitle = TextView(this).apply {
+            textSize = 22f
+            setTextColor(appBarTextColor)
+            setBackgroundColor(appBarBackgroundColor)
+            setPadding(dpToPx(16), 0, dpToPx(16), 0)
+            gravity = Gravity.CENTER_VERTICAL or Gravity.START
+            
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, 
+                dpToPx(appBarHeightDp)
+            )
+        }
+        mainContainer.addView(appBarTitle)
+
+        // SCROLLVIEW MURNI (Mengizinkan seluruh komponen di bawah judul bisa di-scroll ke bawah)
+        val globalScrollView = ScrollView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+            isVerticalScrollBarEnabled = true
+        }
+
+        // KONTEN LAYOUT (Berada di dalam ScrollView)
+        val contentLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+            setPadding(0, dpToPx(10), 0, dpToPx(40))
             gravity = Gravity.CENTER_HORIZONTAL
             tag = "App"
         }
+        globalScrollView.addView(contentLayout)
+        mainContainer.addView(globalScrollView)
 
         val containerStack = Stack<LinearLayout>()
-        containerStack.push(rootLayout)
+        containerStack.push(contentLayout)
 
         val rawUiData = RustJni.getUiLayout()
         val viewMap = HashMap<String, android.view.View>()
@@ -81,7 +118,7 @@ class MainActivity : AppCompatActivity() {
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.WRAP_CONTENT
                         ).apply { 
-                            setMargins(dpToPx(16), dpToPx(15), dpToPx(16), dpToPx(15)) 
+                            setMargins(dpToPx(16), dpToPx(10), dpToPx(16), dpToPx(10)) 
                         }
                         tag = "Row"
                     }
@@ -118,23 +155,11 @@ class MainActivity : AppCompatActivity() {
 
                 when (currentWidget) {
                     "Text" -> {
-                        val tv = TextView(this).apply {
-                            text = textVal
-                            
-                            if (idVal == "judul") {
-                                textSize = 22f
-                                setTextColor(appBarTextColor)
-                                setBackgroundColor(appBarBackgroundColor)
-                                setPadding(dpToPx(16), 0, dpToPx(16), 0)
-                                gravity = Gravity.CENTER_VERTICAL or Gravity.START
-                                
-                                layoutParams = LinearLayout.LayoutParams(
-                                    ViewGroup.LayoutParams.MATCH_PARENT, 
-                                    dpToPx(appBarHeightDp)
-                                ).apply {
-                                    setMargins(0, 0, 0, dpToPx(15))
-                                }
-                            } else {
+                        if (idVal == "judul") {
+                            appBarTitle.text = textVal
+                        } else {
+                            val tv = TextView(this).apply {
+                                text = textVal
                                 textSize = if (sizeVal.isNotEmpty()) sizeVal.toFloat() else 18f
                                 setTextColor(if (colorVal.isNotEmpty()) Color.parseColor(colorVal) else Color.parseColor("#4A4A4A"))
                                 setPadding(0, 15, 0, 15)
@@ -147,9 +172,9 @@ class MainActivity : AppCompatActivity() {
                                     }
                                 }
                             }
+                            activeContainer.addView(tv)
+                            if (idVal.isNotEmpty()) viewMap[idVal] = tv
                         }
-                        activeContainer.addView(tv)
-                        if (idVal.isNotEmpty()) viewMap[idVal] = tv
                     }
                     "Input" -> {
                         val et = EditText(this).apply {
@@ -172,11 +197,11 @@ class MainActivity : AppCompatActivity() {
 
                             layoutParams = if (activeContainer.orientation == LinearLayout.HORIZONTAL) {
                                 LinearLayout.LayoutParams(0, dpToPx(inputHeightDp), 1f).apply {
-                                    setMargins(10, 0, 10, 0)
+                                    setMargins(5, 0, 5, 0)
                                 }
                             } else {
                                 LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dpToPx(inputHeightDp)).apply {
-                                    setMargins(dpToPx(16), dpToPx(15), dpToPx(16), dpToPx(15))
+                                    setMargins(dpToPx(16), dpToPx(10), dpToPx(16), dpToPx(10))
                                 }
                             }
                         }
@@ -189,8 +214,12 @@ class MainActivity : AppCompatActivity() {
                             text = textVal
                             setTextColor(buttonTextColor)
                             isAllCaps = false
-                            textSize = 16f
+                            textSize = 15f
                             
+                            // Mencegah teks tombol meluber keluar: Potong teks panjang dengan tanda "..." di tengah/akhir
+                            maxLines = 1
+                            ellipsize = TextUtils.TruncateAt.END
+
                             val paddingHorizontal = dpToPx(buttonPaddingHorizontalDp)
                             setPadding(paddingHorizontal, 0, paddingHorizontal, 0)
 
@@ -203,7 +232,7 @@ class MainActivity : AppCompatActivity() {
                             
                             layoutParams = if (activeContainer.orientation == LinearLayout.HORIZONTAL) {
                                 LinearLayout.LayoutParams(0, dpToPx(buttonHeightDp), 1f).apply {
-                                    setMargins(10, 0, 10, 0)
+                                    setMargins(6, 0, 6, 0) // Jarak tipis antar tombol di dalam Row
                                 }
                             } else {
                                 LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dpToPx(buttonHeightDp)).apply {
@@ -234,6 +263,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        setContentView(rootLayout)
+        setContentView(mainContainer)
     }
 }
