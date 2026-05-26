@@ -9,7 +9,6 @@ struct KardusArsip {
     tahun: String,
 }
 
-// State untuk data arsip dan master pilihan gudang
 static DATABASE: Mutex<Vec<KardusArsip>> = Mutex::new(Vec::new());
 static MASTER_GUDANG: Mutex<Vec<String>> = Mutex::new(Vec::new());
 static INIT: std::sync::Once = std::sync::Once::new();
@@ -17,12 +16,20 @@ static INIT: std::sync::Once = std::sync::Once::new();
 fn init_database() {
     INIT.call_once(|| {
         let mut db = DATABASE.lock().unwrap();
+        // Mockup data awal untuk contoh tabel live
         db.push(KardusArsip {
             gudang: "Gudang Baru Lantai 1".to_string(),
-            lokasi: "Rak Biru-01".to_string(),
+            lokasi: "Rak A-01".to_string(),
             start_di: 3526,
             end_di: 3550,
             tahun: "2025".to_string(),
+        });
+        db.push(KardusArsip {
+            gudang: "Gudang Lama".to_string(),
+            lokasi: "Sektor B".to_string(),
+            start_di: 1000,
+            end_di: 1250,
+            tahun: "1988".to_string(),
         });
 
         let mut mg = MASTER_GUDANG.lock().unwrap();
@@ -32,76 +39,86 @@ fn init_database() {
     });
 }
 
+// Fungsi helper untuk merender list data (maksimal 5 item terbaru jika tanpa query)
+fn render_table_view(data_list: &[KardusArsip], limit: usize) -> String {
+    if data_list.is_empty() {
+        return "Belum ada data kardus yang terekam.".to_string();
+    }
+
+    let mut susunan_tabel = Vec::new();
+    // Ambil data dari belakang (terbaru) dan batasi jumlahnya demi performa RAM
+    for (index, kardus) in data_list.iter().rev().take(limit).enumerate() {
+        susunan_tabel.push(format!(
+            "{}. 📦 DI.208: {} - {}\n   🏢 {} | 📍 {}\n   📅 Tahun: {}\n   ──────────────────────",
+            index + 1, kardus.start_di, kardus.end_di, kardus.gudang, kardus.lokasi, kardus.tahun
+        ));
+    }
+    susunan_tabel.join("\n")
+}
+
 pub fn handle_action(action: &str, payload: &str) -> String {
     init_database();
     
     match action {
         "nav_menu" => "OPEN_DRAWER".to_string(),
 
-        // Ketika tombol setting ditekan, kirim daftar gudang dipisah tanda pipe "|"
         "nav_setting" => {
             let mg = MASTER_GUDANG.lock().unwrap();
-            if mg.is_empty() {
-                "EMPTY".to_string()
-            } else {
-                mg.join("|")
-            }
+            if mg.is_empty() { "EMPTY".to_string() } else { mg.join("|") }
         }
 
-        // Aksi untuk menambah master gudang baru dari halaman setting
         "tambah_master_gudang" => {
-            if payload.trim().is_empty() {
-                return "ERROR_EMPTY".to_string();
-            }
+            if payload.trim().is_empty() { return "ERROR_EMPTY".to_string(); }
             let mut mg = MASTER_GUDANG.lock().unwrap();
             mg.push(payload.trim().to_string());
             mg.join("|")
         }
 
-        // Aksi untuk menghapus master gudang
         "hapus_master_gudang" => {
             let mut mg = MASTER_GUDANG.lock().unwrap();
             mg.retain(|x| x != payload);
             if mg.is_empty() { "EMPTY".to_string() } else { mg.join("|") }
         }
 
+        // Trigger dipanggil saat pertama kali aplikasi Android terbuka untuk memuat tabel awal
+        "ambil_tabel_awal" => {
+            let db = DATABASE.lock().unwrap();
+            render_table_view(&db, 5)
+        }
+
         "nav_search" => {
             let db = DATABASE.lock().unwrap();
             if payload.is_empty() {
-                return "Ketik nomor DI.208, tahun, atau nama gudang...".to_string();
+                // Logika Cerdas: Jika search bar kosong, kembalikan ke 5 data entri terakhir
+                return render_table_view(&db, 5);
             }
 
             let query = payload.trim().to_lowercase();
-            let mut hasil_pencarian = Vec::new();
+            let mut hasil_filtered = Vec::new();
             let query_angka = query.parse::<i32>().ok();
 
             for kardus in db.iter() {
                 let mut cocok = false;
-
                 if kardus.tahun.contains(&query) || 
                    kardus.gudang.to_lowercase().contains(&query) || 
                    kardus.lokasi.to_lowercase().contains(&query) {
                     cocok = true;
                 }
-                
                 if let Some(nomor) = query_angka {
                     if nomor >= kardus.start_di && nomor <= kardus.end_di {
                         cocok = true;
                     }
                 }
-
                 if cocok {
-                    hasil_pencarian.push(format!(
-                        "🏢 [{}] -> {}\n   • Rentang DI.208: {} s/d {}\n   • Tahun Arsip: {}\n",
-                        kardus.gudang, kardus.lokasi, kardus.start_di, kardus.end_di, kardus.tahun
-                    ));
+                    hasil_filtered.push(kardus.clone());
                 }
             }
 
-            if hasil_pencarian.is_empty() {
-                format!("❌ Data '{}' tidak ditemukan di gudang manapun.", query)
+            if hasil_filtered.is_empty() {
+                format!("❌ Data '{}' tidak ditemukan.", query)
             } else {
-                format!("🔍 Hasil Analisis ArZip untuk '{}':\n\n{}", query, hasil_pencarian.join("\n"))
+                // Tampilkan semua data yang cocok dengan hasil pencarian
+                render_table_view(&hasil_filtered, 50)
             }
         }
 
@@ -109,7 +126,7 @@ pub fn handle_action(action: &str, payload: &str) -> String {
             let mut db = DATABASE.lock().unwrap();
             let parts: Vec<&str> = payload.split('|').collect();
             if parts.len() < 4 || parts[0].is_empty() || parts[1].is_empty() || parts[2].is_empty() || parts[3].is_empty() {
-                return "⚠️ Gagal! Pastikan pilihan Gudang, Rak, Rentang, dan Tahun terisi.".to_string();
+                return "⚠️ Gagal! Pastikan semua form terisi.".to_string();
             }
 
             let gudang = parts[0].to_string();
@@ -122,7 +139,9 @@ pub fn handle_action(action: &str, payload: &str) -> String {
             let end_di = range_parts.get(1).and_then(|s| s.parse::<i32>().ok()).unwrap_or(start_di);
 
             db.push(KardusArsip { gudang, lokasi, start_di, end_di, tahun });
-            "✅ BERHASIL DICATAT!\nData kardus baru sudah aman disimpan di memori Rust.".to_string()
+            
+            // Logika Cerdas: Kirimkan kode sukses disusul dengan visual data tabel terupdate langsung
+            format!("✅ SUKSES\n{}", render_table_view(&db, 5))
         }
 
         _ => format!("Aksi '{}' diterima.", action),

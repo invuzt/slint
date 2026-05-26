@@ -53,5 +53,19 @@ Row {
 
 Text {
     id: "output_pesan"
-    text: "Status: Keyboard angka aktif. Pisahkan nomor dengan spasi."
+    text: "Status: Siap menerima entri data."
+}
+
+# --- BAGIAN COMPONENT TABEL / LIST VIEW LAZY DATA ---
+Text {
+    id: "tabel_judul"
+    text: "\n📋 DATA TERBARU / HASIL PENCARIAN:"
+    size: "16"
+    color: "#0067FF"
+}
+
+Text {
+    id: "tabel_konten"
+    text: "Memuat data..."
+    size: "14"
 }

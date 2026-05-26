@@ -23,13 +23,11 @@ import java.util.Stack
 
 class MainActivity : AppCompatActivity() {
 
-    // Simpan daftar master gudang secara dinamis di level class
     private var dynamicGudangList = ArrayList<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Tarik data awal gudang dari Rust untuk pertama kali
         val initialGudangRaw = RustJni.Hub("nav_setting", "")
         updateGudangListFromPayload(initialGudangRaw)
 
@@ -218,7 +216,8 @@ class MainActivity : AppCompatActivity() {
                                     override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
                                     override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                                         val res = RustJni.Hub(searchActionId, s?.toString() ?: "")
-                                        (viewMap["output_pesan"] as? TextView)?.text = res
+                                        // Update komponen kontainer tabel dinamis saat mencari data
+                                        (viewMap["tabel_konten"] as? TextView)?.text = res
                                     }
                                     override fun afterTextChanged(s: Editable?) {}
                                 })
@@ -244,8 +243,7 @@ class MainActivity : AppCompatActivity() {
                                     setOnClickListener {
                                         if (dynamicGudangList.isEmpty()) {
                                             setText("")
-                                            val outTarget = viewMap["output_pesan"] as? TextView
-                                            outTarget?.text = "⚠️ Daftar gudang kosong. Tambahkan dulu lewat tombol ⚙️ di atas."
+                                            (viewMap["output_pesan"] as? TextView)?.text = "⚠️ Daftar gudang kosong!"
                                             return@setOnClickListener
                                         }
                                         val arr = dynamicGudangList.toTypedArray()
@@ -306,6 +304,10 @@ class MainActivity : AppCompatActivity() {
         drawerLayout.addView(sideMenuContainer)
         setContentView(drawerLayout)
 
+        // AMBIL & RENDER LIVE DATA AWAL SAAT APLIKASI DIBUKA
+        val dataAwalTabel = RustJni.Hub("ambil_tabel_awal", "")
+        (viewMap["tabel_konten"] as? TextView)?.text = dataAwalTabel
+
         for (triple in viewActions) {
             val view = triple.first
             val action = triple.second
@@ -313,7 +315,6 @@ class MainActivity : AppCompatActivity() {
 
             view.setOnClickListener {
                 if (action == "nav_setting") {
-                    // DIALOG PENGATURAN GUDANG DINAMIS
                     openGudangManagementDialog()
                     return@setOnClickListener
                 }
@@ -340,17 +341,23 @@ class MainActivity : AppCompatActivity() {
                 if (resultFromRust == "OPEN_DRAWER") {
                     drawerLayout.openDrawer(Gravity.START)
                 } else {
-                    (viewMap["output_pesan"] as? TextView)?.text = resultFromRust
-                    if (isFormSubmit && resultFromRust.startsWith("✅")) {
+                    if (isFormSubmit && resultFromRust.startsWith("✅ SUCCESS")) {
+                        // Pecah string jika sukses untuk memperbarui status pesan dan tabel konten sekaligus
+                        (viewMap["output_pesan"] as? TextView)?.text = "✅ Data kardus berhasil direkam!"
+                        
+                        val tabelTerupdate = resultFromRust.substringAfter("✅ SUKSES\n")
+                        (viewMap["tabel_konten"] as? TextView)?.text = tabelTerupdate
+
                         inputRangeEt?.setText("")
                         inputRangeEt?.requestFocus()
+                    } else {
+                        (viewMap["output_pesan"] as? TextView)?.text = resultFromRust
                     }
                 }
             }
         }
     }
 
-    // Fungsi pemecah payload dari Rust ke Array List Kotlin
     private fun updateGudangListFromPayload(payload: String) {
         dynamicGudangList.clear()
         if (payload != "EMPTY" && payload.isNotEmpty()) {
@@ -361,7 +368,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // Modal Manager Dialog khusus Master Gudang
     private fun openGudangManagementDialog() {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("⚙️ Kelola Master Gudang")
@@ -377,7 +383,6 @@ class MainActivity : AppCompatActivity() {
         }
         layout.addView(description)
 
-        // Tampilkan daftar gudang yang bisa di-tap untuk hapus
         for (gudangName in dynamicGudangList) {
             val tv = TextView(this).apply {
                 text = "❌ $gudangName"
@@ -390,7 +395,6 @@ class MainActivity : AppCompatActivity() {
                         .setPositiveButton("Ya") { _, _ ->
                             val res = RustJni.Hub("hapus_master_gudang", gudangName)
                             updateGudangListFromPayload(res)
-                            // Refresh dialog
                             it.visibility = ViewGroup.GONE
                         }
                         .setNegativeButton("Batal", null)
