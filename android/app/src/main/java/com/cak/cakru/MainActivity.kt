@@ -23,8 +23,15 @@ import java.util.Stack
 
 class MainActivity : AppCompatActivity() {
 
+    // Simpan daftar master gudang secara dinamis di level class
+    private var dynamicGudangList = ArrayList<String>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Tarik data awal gudang dari Rust untuk pertama kali
+        val initialGudangRaw = RustJni.Hub("nav_setting", "")
+        updateGudangListFromPayload(initialGudangRaw)
 
         val filledButtonColor = Color.parseColor("#0067FF")
         val buttonTextFilledColor = Color.parseColor("#FFFFFF")
@@ -63,7 +70,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         val menuTitle = TextView(this).apply {
-            text = "ArZip Ops"
+            text = "ArZip Panel"
             textSize = 24f
             setTypeface(null, Typeface.BOLD)
             setTextColor(Color.parseColor("#1C1B1F"))
@@ -231,15 +238,20 @@ class MainActivity : AppCompatActivity() {
                                     if (activeContainer.orientation == LinearLayout.HORIZONTAL) 1f else 0f
                                 ).apply { setMargins(dpToPx(4), dpToPx(4), dpToPx(4), dpToPx(4)) }
 
-                                // STRATEGI INPUT PINTAR BERDASARKAN ID
                                 if (idVal == "input_gudang") {
                                     isFocusable = false
                                     isClickable = true
                                     setOnClickListener {
-                                        val listGudang = arrayOf("Gudang Lama", "Gudang Baru Lantai 1", "Gudang Baru Lantai 2")
+                                        if (dynamicGudangList.isEmpty()) {
+                                            setText("")
+                                            val outTarget = viewMap["output_pesan"] as? TextView
+                                            outTarget?.text = "⚠️ Daftar gudang kosong. Tambahkan dulu lewat tombol ⚙️ di atas."
+                                            return@setOnClickListener
+                                        }
+                                        val arr = dynamicGudangList.toTypedArray()
                                         AlertDialog.Builder(this@MainActivity)
                                             .setTitle("Pilih Gudang")
-                                            .setItems(listGudang) { _, index -> setText(listGudang[index]) }
+                                            .setItems(arr) { _, index -> setText(arr[index]) }
                                             .show()
                                     }
                                 } else if (idVal == "input_tahun") {
@@ -253,7 +265,6 @@ class MainActivity : AppCompatActivity() {
                                             .show()
                                     }
                                 } else if (idVal == "input_range") {
-                                    // AKTIFKAN KEYBOARD ANGKA + SPASI SAJA (Biar ngetik tanpa simbol)
                                     inputType = InputType.TYPE_CLASS_PHONE
                                 }
                             }
@@ -301,14 +312,18 @@ class MainActivity : AppCompatActivity() {
             val isFormSubmit = triple.third
 
             view.setOnClickListener {
+                if (action == "nav_setting") {
+                    // DIALOG PENGATURAN GUDANG DINAMIS
+                    openGudangManagementDialog()
+                    return@setOnClickListener
+                }
+
                 val inputGudangEt = viewMap["input_gudang"] as? EditText
                 val inputKardusEt = viewMap["input_kardus"] as? EditText
                 val inputRangeEt = viewMap["input_range"] as? EditText
                 val inputTahunEt = viewMap["input_tahun"] as? EditText
 
                 var rangeRaw = inputRangeEt?.text?.toString() ?: ""
-                
-                // PINTAR: Mengubah otomatis ketikan spasi "3526 3550" menjadi format strip "3526-3550" sebelum dikirim ke Rust
                 if (rangeRaw.contains(" ")) {
                     rangeRaw = rangeRaw.trim().replace("\\s+".toRegex(), "-")
                 }
@@ -326,15 +341,80 @@ class MainActivity : AppCompatActivity() {
                     drawerLayout.openDrawer(Gravity.START)
                 } else {
                     (viewMap["output_pesan"] as? TextView)?.text = resultFromRust
-                    
-                    // DESAIN AUTO-STICKY: Kolom Gudang, Rak, dan Tahun TIDAK DIHAPUS. 
-                    // Hanya mengosongkan kolom nomor DI.208 supaya langsung siap isi nomor selanjutnya!
                     if (isFormSubmit && resultFromRust.startsWith("✅")) {
                         inputRangeEt?.setText("")
-                        inputRangeEt?.requestFocus() // Langsung fokuskan kursor ke kolom nomor lagi
+                        inputRangeEt?.requestFocus()
                     }
                 }
             }
         }
+    }
+
+    // Fungsi pemecah payload dari Rust ke Array List Kotlin
+    private fun updateGudangListFromPayload(payload: String) {
+        dynamicGudangList.clear()
+        if (payload != "EMPTY" && payload.isNotEmpty()) {
+            val items = payload.split("|")
+            for (item in items) {
+                if (item.isNotEmpty()) dynamicGudangList.add(item)
+            }
+        }
+    }
+
+    // Modal Manager Dialog khusus Master Gudang
+    private fun openGudangManagementDialog() {
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("⚙️ Kelola Master Gudang")
+
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(40, 20, 40, 20)
+        }
+
+        val description = TextView(this).apply {
+            text = "Daftar Gudang Aktif saat ini (Tap untuk hapus):"
+            setPadding(0, 0, 0, 10)
+        }
+        layout.addView(description)
+
+        // Tampilkan daftar gudang yang bisa di-tap untuk hapus
+        for (gudangName in dynamicGudangList) {
+            val tv = TextView(this).apply {
+                text = "❌ $gudangName"
+                textSize = 16f
+                setPadding(10, 15, 10, 15)
+                isClickable = true
+                setOnClickListener {
+                    AlertDialog.Builder(this@MainActivity)
+                        .setMessage("Hapus '$gudangName' dari pilihan?")
+                        .setPositiveButton("Ya") { _, _ ->
+                            val res = RustJni.Hub("hapus_master_gudang", gudangName)
+                            updateGudangListFromPayload(res)
+                            // Refresh dialog
+                            it.visibility = ViewGroup.GONE
+                        }
+                        .setNegativeButton("Batal", null)
+                        .show()
+                }
+            }
+            layout.addView(tv)
+        }
+
+        val inputBaru = EditText(this).apply {
+            hint = "Nama Gudang Baru..."
+            setSingleLine()
+        }
+        layout.addView(inputBaru)
+
+        builder.setView(layout)
+        builder.setPositiveButton("Tambah") { _, _ ->
+            val namaBaru = inputBaru.text.toString()
+            if (namaBaru.isNotEmpty()) {
+                val res = RustJni.Hub("tambah_master_gudang", namaBaru)
+                updateGudangListFromPayload(res)
+            }
+        }
+        builder.setNegativeButton("Tutup", null)
+        builder.show()
     }
 }

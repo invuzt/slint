@@ -9,7 +9,9 @@ struct KardusArsip {
     tahun: String,
 }
 
+// State untuk data arsip dan master pilihan gudang
 static DATABASE: Mutex<Vec<KardusArsip>> = Mutex::new(Vec::new());
+static MASTER_GUDANG: Mutex<Vec<String>> = Mutex::new(Vec::new());
 static INIT: std::sync::Once = std::sync::Once::new();
 
 fn init_database() {
@@ -22,17 +24,49 @@ fn init_database() {
             end_di: 3550,
             tahun: "2025".to_string(),
         });
+
+        let mut mg = MASTER_GUDANG.lock().unwrap();
+        mg.push("Gudang Lama".to_string());
+        mg.push("Gudang Baru Lantai 1".to_string());
+        mg.push("Gudang Baru Lantai 2".to_string());
     });
 }
 
 pub fn handle_action(action: &str, payload: &str) -> String {
     init_database();
-    let mut db = DATABASE.lock().unwrap();
-
+    
     match action {
         "nav_menu" => "OPEN_DRAWER".to_string(),
 
+        // Ketika tombol setting ditekan, kirim daftar gudang dipisah tanda pipe "|"
+        "nav_setting" => {
+            let mg = MASTER_GUDANG.lock().unwrap();
+            if mg.is_empty() {
+                "EMPTY".to_string()
+            } else {
+                mg.join("|")
+            }
+        }
+
+        // Aksi untuk menambah master gudang baru dari halaman setting
+        "tambah_master_gudang" => {
+            if payload.trim().is_empty() {
+                return "ERROR_EMPTY".to_string();
+            }
+            let mut mg = MASTER_GUDANG.lock().unwrap();
+            mg.push(payload.trim().to_string());
+            mg.join("|")
+        }
+
+        // Aksi untuk menghapus master gudang
+        "hapus_master_gudang" => {
+            let mut mg = MASTER_GUDANG.lock().unwrap();
+            mg.retain(|x| x != payload);
+            if mg.is_empty() { "EMPTY".to_string() } else { mg.join("|") }
+        }
+
         "nav_search" => {
+            let db = DATABASE.lock().unwrap();
             if payload.is_empty() {
                 return "Ketik nomor DI.208, tahun, atau nama gudang...".to_string();
             }
@@ -44,14 +78,12 @@ pub fn handle_action(action: &str, payload: &str) -> String {
             for kardus in db.iter() {
                 let mut cocok = false;
 
-                // Pencarian via teks (Tahun, Nama Gudang, atau Detail Rak)
                 if kardus.tahun.contains(&query) || 
                    kardus.gudang.to_lowercase().contains(&query) || 
                    kardus.lokasi.to_lowercase().contains(&query) {
                     cocok = true;
                 }
                 
-                // Pencarian via nomor DI.208 (Smart Range)
                 if let Some(nomor) = query_angka {
                     if nomor >= kardus.start_di && nomor <= kardus.end_di {
                         cocok = true;
@@ -69,16 +101,12 @@ pub fn handle_action(action: &str, payload: &str) -> String {
             if hasil_pencarian.is_empty() {
                 format!("❌ Data '{}' tidak ditemukan di gudang manapun.", query)
             } else {
-                format!(
-                    "🔍 Hasil Analisis ArZip untuk '{}':\n\n{}",
-                    payload,
-                    hasil_pencarian.join("\n")
-                )
+                format!("🔍 Hasil Analisis ArZip untuk '{}':\n\n{}", query, hasil_pencarian.join("\n"))
             }
         }
 
         "btn_simpan" => {
-            // Format payload baru: "gudang|lokasi|rentang|tahun"
+            let mut db = DATABASE.lock().unwrap();
             let parts: Vec<&str> = payload.split('|').collect();
             if parts.len() < 4 || parts[0].is_empty() || parts[1].is_empty() || parts[2].is_empty() || parts[3].is_empty() {
                 return "⚠️ Gagal! Pastikan pilihan Gudang, Rak, Rentang, dan Tahun terisi.".to_string();
@@ -93,14 +121,7 @@ pub fn handle_action(action: &str, payload: &str) -> String {
             let start_di = range_parts.get(0).and_then(|s| s.parse::<i32>().ok()).unwrap_or(0);
             let end_di = range_parts.get(1).and_then(|s| s.parse::<i32>().ok()).unwrap_or(start_di);
 
-            db.push(KardusArsip {
-                gudang,
-                lokasi,
-                start_di,
-                end_di,
-                tahun,
-            });
-
+            db.push(KardusArsip { gudang, lokasi, start_di, end_di, tahun });
             "✅ BERHASIL DICATAT!\nData kardus baru sudah aman disimpan di memori Rust.".to_string()
         }
 
