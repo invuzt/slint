@@ -7,9 +7,7 @@ static INIT: std::sync::Once = std::sync::Once::new();
 
 fn init_database() {
     INIT.call_once(|| {
-        // Simpan langsung file database ke folder Download internal HP
         let db_path = "/storage/emulated/0/Download/arzip_lokal.db";
-        
         let conn = Connection::open(db_path).expect("Gagal membuat file SQLite di folder Download");
         
         conn.execute(
@@ -32,7 +30,7 @@ fn init_database() {
             [],
         ).expect("Gagal membuat tabel master_gudang");
 
-        // FIX E0505: Mengisolasi scope stmt dan data default agar drop sebelum conn dipindah
+        // BLOCK SCOPE 1: Mengisolasi pengisian data default awal
         {
             let mut stmt = conn.prepare("SELECT COUNT(*) FROM master_gudang").unwrap();
             let count: i64 = stmt.query_row([], |row| row.get(0)).unwrap_or(0);
@@ -43,19 +41,21 @@ fn init_database() {
                     let _ = conn.execute("INSERT INTO master_gudang (nama_gudang) VALUES (?1)", [g]);
                 }
             }
-        } // <--- stmt dan pinjaman (borrow) ke conn otomatis hancur di sini
+        } 
 
-        // Ambil data untuk disimpan ke cache RAM Rust
-        let mut stmt_gudang = conn.prepare("SELECT nama_gudang FROM master_gudang").unwrap();
-        let gudang_iter = stmt_gudang.query_map([], |row| row.get::<_, String>(0)).unwrap();
-        let mut mg = MASTER_GUDANG.lock().unwrap();
-        for g in gudang_iter {
-            if let Ok(nama) = g {
-                mg.push(nama);
+        // BLOCK SCOPE 2: Mengisolasi pembacaan master gudang ke cache RAM
+        {
+            let mut stmt_gudang = conn.prepare("SELECT nama_gudang FROM master_gudang").unwrap();
+            let gudang_iter = stmt_gudang.query_map([], |row| row.get::<_, String>(0)).unwrap();
+            let mut mg = MASTER_GUDANG.lock().unwrap();
+            for g in gudang_iter {
+                if let Ok(nama) = g {
+                    mg.push(nama);
+                }
             }
-        }
+        } // <--- stmt_gudang hancur di sini, koneksi BEBAS dari pinjaman!
 
-        // Sekarang conn sudah bersih dari pinjaman, aman untuk di-move!
+        // Simpan koneksi utuh ke slot global
         let mut db_slot = DB_CONN.lock().unwrap();
         *db_slot = Some(conn);
     });
@@ -200,8 +200,7 @@ pub fn handle_action(action: &str, payload: &str) -> String {
                     return format!("✅ SUKSES\n{}", render_table_from_db("", &[], 5));
                 }
             }
-            "⚠️ Gagal menyimpan ke database lokal internal HP."
-                .to_string()
+            "⚠️ Gagal menyimpan ke database lokal internal HP.".to_string()
         }
 
         _ => format!("Aksi '{}' diterima.", action),
