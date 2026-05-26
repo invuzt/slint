@@ -17,6 +17,10 @@ Navbar {
 }
 
 Text {
+    id: "output_pesan"
+    text: ""
+}
+Text {
     id: "sub_judul"
     text: "Do you want to update this app?"
     size: "20"
@@ -33,7 +37,3 @@ Row {
     }
 }
 
-Text {
-    id: "output_pesan"
-    text: ""
-}
