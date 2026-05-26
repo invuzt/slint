@@ -13,7 +13,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.widget.NestedScrollView
 import com.google.android.material.appbar.AppBarLayout
-import com.google.android.material.appbar.CollapsingToolbarLayout
 import com.google.android.material.appbar.AppBarLayout.LayoutParams.SCROLL_FLAG_ENTER_ALWAYS
 import com.google.android.material.appbar.AppBarLayout.LayoutParams.SCROLL_FLAG_SCROLL
 import java.util.Stack
@@ -40,7 +39,7 @@ class MainActivity : AppCompatActivity() {
             return (dp * resources.displayMetrics.density).toInt()
         }
 
-        // 1. ROOT CONTAINER (Menggunakan CoordinatorLayout untuk mendeteksi scroll behavior)
+        // Menggunakan nama kelas lengkap untuk menghindari ambiguitas import
         val coordinatorLayout = androidx.coordinatorlayout.widget.CoordinatorLayout(this).apply {
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -48,7 +47,6 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        // 2. APP BAR LAYOUT (Wadah penampung struktur Toolbar agar bisa sembunyi otomatis)
         val appBarLayout = AppBarLayout(this).apply {
             layoutParams = AppBarLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -57,13 +55,11 @@ class MainActivity : AppCompatActivity() {
             setBackgroundColor(appBarBackgroundColor)
         }
 
-        // Toolbar Resmi Android (Bisa dipasang judul bawaan & otomatis mendukung sistem ikon menu)
         val toolbar = Toolbar(this).apply {
             val params = AppBarLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 dpToPx(appBarHeightDp)
             ).apply {
-                // SUNTIKKAN BEHAVIOR: SCROLL | ENTER_ALWAYS (Persis seperti Compose!)
                 scrollFlags = SCROLL_FLAG_SCROLL or SCROLL_FLAG_ENTER_ALWAYS
             }
             layoutParams = params
@@ -72,13 +68,11 @@ class MainActivity : AppCompatActivity() {
         appBarLayout.addView(toolbar)
         coordinatorLayout.addView(appBarLayout)
 
-        // 3. SCROLL CONTAINER (Tempat penampung konten utama yang bisa di-scroll)
         val nestedScrollView = NestedScrollView(this).apply {
             val params = androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
             ).apply {
-                // Menghubungkan scroll content dengan behavior milik AppBarLayout di atas
                 behavior = AppBarLayout.ScrollingViewBehavior()
             }
             layoutParams = params
@@ -169,7 +163,6 @@ class MainActivity : AppCompatActivity() {
                 when (currentWidget) {
                     "Text" -> {
                         if (idVal == "judul") {
-                            // Masukkan teks langsung ke sistem judul internal Toolbar MD3 resmi
                             toolbar.title = textVal
                         } else {
                             val tv = TextView(this).apply {
@@ -273,6 +266,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        setContentView(coordinatorLayout)
+        // Cast eksplisit ke android.view.View untuk meloloskan kompilasi dari ambiguitas overload
+        setContentView(coordinatorLayout as android.view.View)
     }
 }
