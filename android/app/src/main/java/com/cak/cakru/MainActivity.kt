@@ -24,7 +24,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Konfigurasi Warna Tema MD3
         val filledButtonColor = Color.parseColor("#0067FF")
         val outlinedButtonColor = Color.parseColor("#0067FF")
         val buttonTextFilledColor = Color.parseColor("#FFFFFF")
@@ -43,25 +42,16 @@ class MainActivity : AppCompatActivity() {
             return (dp * resources.displayMetrics.density).toInt()
         }
 
-        // ROOT UTAMA: DRAWER LAYOUT
         val drawerLayout = DrawerLayout(this).apply {
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
+            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         }
 
-        // KONTEN UTAMA LAYER BELOW
         val mainContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
             setBackgroundColor(Color.parseColor("#FFFFFF"))
         }
 
-        // MENU SAMPING SLIDING CONTAINER
         val sideMenuContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.parseColor("#FFFFFF"))
@@ -72,21 +62,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         val menuTitle = TextView(this).apply {
-            text = "Cakru Menu"
+            text = "BPN DI.208"
             textSize = 24f
             setTypeface(null, Typeface.BOLD)
             setTextColor(Color.parseColor("#1C1B1F"))
             setPadding(0, 0, 0, dpToPx(24))
         }
         sideMenuContainer.addView(menuTitle)
-
-        val sampleMenuItem = TextView(this).apply {
-            text = "📁 Semua Catatan"
-            textSize = 16f
-            setTextColor(Color.parseColor("#49454F"))
-            setPadding(0, dpToPx(12), 0, dpToPx(12))
-        }
-        sideMenuContainer.addView(sampleMenuItem)
 
         var navbarContainer: LinearLayout? = null
         val globalScrollView = ScrollView(this).apply {
@@ -108,7 +90,7 @@ class MainActivity : AppCompatActivity() {
 
         val rawUiData = RustJni.getUiLayout()
         val viewMap = HashMap<String, android.view.View>()
-        val viewActions = ArrayList<Triple<android.view.View, String, EditText?>>()
+        val viewActions = ArrayList<Triple<android.view.View, String, Boolean>>()
 
         val lines = rawUiData.split("\n")
         var currentWidget = ""
@@ -119,9 +101,7 @@ class MainActivity : AppCompatActivity() {
         var sizeVal = ""
         var colorVal = ""
 
-        var lastActiveInput: EditText? = null
         var isInsideNavbar = false
-
         val outValue = TypedValue()
         theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, outValue, true)
         val rippleResId = outValue.resourceId
@@ -133,7 +113,6 @@ class MainActivity : AppCompatActivity() {
             if (trimmed.endsWith("{")) {
                 currentWidget = trimmed.split(" ")[0]
                 idVal = ""; textVal = ""; hintVal = ""; actionVal = ""; sizeVal = ""; colorVal = ""
-
                 when (currentWidget) {
                     "Navbar" -> {
                         isInsideNavbar = true
@@ -156,7 +135,7 @@ class MainActivity : AppCompatActivity() {
                                 ViewGroup.LayoutParams.MATCH_PARENT,
                                 if (isInsideNavbar) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT
                             ).apply {
-                                if (!isInsideNavbar) setMargins(0, dpToPx(20), 0, dpToPx(10))
+                                if (!isInsideNavbar) setMargins(0, dpToPx(12), 0, dpToPx(12))
                             }
                             tag = "Row"
                         }
@@ -198,14 +177,9 @@ class MainActivity : AppCompatActivity() {
                                 isFocusable = true
                                 layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT)
                             } else {
-                                textSize = if (sizeVal.isNotEmpty()) sizeVal.toFloat() else 18f
+                                textSize = if (sizeVal.isNotEmpty()) sizeVal.安定 else 16f
                                 setTextColor(if (colorVal.isNotEmpty()) Color.parseColor(colorVal) else Color.parseColor("#1C1B1F"))
-                                if (idVal == "sub_judul") {
-                                    textSize = 20f
-                                    setPadding(0, dpToPx(8), 0, dpToPx(16))
-                                } else {
-                                    setPadding(0, dpToPx(8), 0, dpToPx(8))
-                                }
+                                setPadding(0, dpToPx(6), 0, dpToPx(6))
                                 layoutParams = LinearLayout.LayoutParams(
                                     if (activeContainer.orientation == LinearLayout.HORIZONTAL) 0 else ViewGroup.LayoutParams.MATCH_PARENT,
                                     ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -216,16 +190,15 @@ class MainActivity : AppCompatActivity() {
                         activeContainer.addView(tv)
                         if (idVal.isNotEmpty()) viewMap[idVal] = tv
                         if (isInsideNavbar && (actionVal.isNotEmpty() || idVal.isNotEmpty())) {
-                            val act = if (actionVal.isNotEmpty()) actionVal else idVal
-                            viewActions.add(Triple(tv, act, null))
+                            viewActions.add(Triple(tv, if (actionVal.isNotEmpty()) actionVal else idVal, false))
                         }
                     }
                     "Input" -> {
                         val et = EditText(this).apply {
                             hint = hintVal
-                            textSize = 16f
+                            textSize = 15f
                             setTextColor(appBarTextColor)
-                            setHintTextColor(Color.parseColor("#49454F"))
+                            setHintTextColor(Color.parseColor("#79747E"))
                             if (isInsideNavbar) {
                                 setBackgroundColor(Color.TRANSPARENT)
                                 gravity = Gravity.CENTER_VERTICAL or Gravity.START
@@ -237,8 +210,7 @@ class MainActivity : AppCompatActivity() {
                                     override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
                                     override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                                         val res = RustJni.Hub(searchActionId, s?.toString() ?: "")
-                                        val outTarget = viewMap["output_pesan"] as? TextView
-                                        outTarget?.text = res
+                                        (viewMap["output_pesan"] as? TextView)?.text = res
                                     }
                                     override fun afterTextChanged(s: Editable?) {}
                                 })
@@ -248,7 +220,7 @@ class MainActivity : AppCompatActivity() {
                                 gravity = Gravity.CENTER_VERTICAL
                                 background = GradientDrawable().apply {
                                     shape = GradientDrawable.RECTANGLE
-                                    cornerRadii = floatArrayOf(12f, 12f, 12f, 12f, 0f, 0f, 0f, 0f)
+                                    cornerRadius = dpToPx(8).toFloat()
                                     setColor(inputBackgroundColor)
                                     setStroke(dpToPx(1), inputIndicatorColor)
                                 }
@@ -256,12 +228,11 @@ class MainActivity : AppCompatActivity() {
                                     if (activeContainer.orientation == LinearLayout.HORIZONTAL) 0 else ViewGroup.LayoutParams.MATCH_PARENT,
                                     dpToPx(inputHeightDp),
                                     if (activeContainer.orientation == LinearLayout.HORIZONTAL) 1f else 0f
-                                ).apply { setMargins(0, dpToPx(5), 0, dpToPx(5)) }
+                                ).apply { setMargins(dpToPx(4), dpToPx(4), dpToPx(4), dpToPx(4)) }
                             }
                         }
                         activeContainer.addView(et)
                         if (idVal.isNotEmpty()) viewMap[idVal] = et
-                        if (!isInsideNavbar) lastActiveInput = et
                     }
                     "Button" -> {
                         val btn = Button(this).apply {
@@ -269,40 +240,22 @@ class MainActivity : AppCompatActivity() {
                             isAllCaps = false
                             textSize = 16f
                             typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
-                            maxLines = 1
-                            ellipsize = TextUtils.TruncateAt.END
                             val paddingHorizontal = dpToPx(buttonPaddingHorizontalDp)
                             setPadding(paddingHorizontal, 0, paddingHorizontal, 0)
 
-                            if (textVal.equals("Cancel", ignoreCase = true) || idVal == "btn_cancel") {
-                                setTextColor(outlinedButtonColor)
-                                background = GradientDrawable().apply {
-                                    shape = GradientDrawable.RECTANGLE
-                                    cornerRadius = dpToPx(buttonHeightDp / 2).toFloat()
-                                    setColor(Color.TRANSPARENT)
-                                    setStroke(dpToPx(2), outlinedButtonColor)
-                                }
-                            } else {
-                                setTextColor(buttonTextFilledColor)
-                                background = GradientDrawable().apply {
-                                    shape = GradientDrawable.RECTANGLE
-                                    cornerRadius = dpToPx(buttonHeightDp / 2).toFloat()
-                                    setColor(filledButtonColor)
-                                }
+                            setTextColor(buttonTextFilledColor)
+                            background = GradientDrawable().apply {
+                                shape = GradientDrawable.RECTANGLE
+                                cornerRadius = dpToPx(buttonHeightDp / 2).toFloat()
+                                setColor(filledButtonColor)
                             }
-                            layoutParams = LinearLayout.LayoutParams(
-                                if (activeContainer.orientation == LinearLayout.HORIZONTAL) 0 else ViewGroup.LayoutParams.MATCH_PARENT,
-                                dpToPx(buttonHeightDp),
-                                if (activeContainer.orientation == LinearLayout.HORIZONTAL) 1f else 0f
-                            ).apply {
-                                if (activeContainer.orientation == LinearLayout.HORIZONTAL) setMargins(dpToPx(8), 0, dpToPx(8), 0)
-                                else setMargins(0, dpToPx(10), 0, dpToPx(10))
+                            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dpToPx(buttonHeightDp)).apply {
+                                setMargins(0, dpToPx(8), 0, dpToPx(8))
                             }
                         }
                         activeContainer.addView(btn)
                         if (actionVal.isNotEmpty() || idVal.isNotEmpty()) {
-                            val act = if (actionVal.isNotEmpty()) actionVal else idVal
-                            viewActions.add(Triple(btn, act, lastActiveInput))
+                            viewActions.add(Triple(btn, if (actionVal.isNotEmpty()) actionVal else idVal, true))
                         }
                     }
                 }
@@ -315,21 +268,33 @@ class MainActivity : AppCompatActivity() {
         drawerLayout.addView(sideMenuContainer)
         setContentView(drawerLayout)
 
-        // EKSEKUTOR KLIK
+        // EKSEKUTOR SEPAKAT KELOLA MULTI INPUT FORM
         for (triple in viewActions) {
             val view = triple.first
             val action = triple.second
-            val linkedInput = triple.third
+            val isFormSubmit = triple.third
 
             view.setOnClickListener {
-                val inputData = linkedInput?.text?.toString() ?: ""
-                val resultFromRust = RustJni.Hub(action, inputData)
+                val payloadData = if (isFormSubmit) {
+                    val lok = (viewMap["input_kardus"] as? EditText)?.text?.toString() ?: ""
+                    val rng = (viewMap["input_range"] as? EditText)?.text?.toString() ?: ""
+                    val thn = (viewMap["input_tahun"] as? EditText)?.text?.toString() ?: ""
+                    "$lok|$rng|$thn"
+                } else ""
+
+                val resultFromRust = RustJni.Hub(action, payloadData)
                 
                 if (resultFromRust == "OPEN_DRAWER") {
                     drawerLayout.openDrawer(Gravity.START)
                 } else {
-                    val outputTarget = viewMap["output_pesan"] as? TextView
-                    outputTarget?.text = resultFromRust
+                    (viewMap["output_pesan"] as? TextView)?.text = resultFromRust
+                    
+                    // Bersihkan form setelah sukses klik simpan
+                    if (isFormSubmit && resultFromRust.startsWith("✅")) {
+                        (viewMap["input_kardus"] as? EditText)?.setText("")
+                        (viewMap["input_range"] as? EditText)?.setText("")
+                        (viewMap["input_tahun"] as? EditText)?.setText("")
+                    }
                 }
             }
         }

@@ -7,7 +7,7 @@ Navbar {
         }
         Input {
             id: "nav_search"
-            placeholder: "Telusuri catatan..."
+            placeholder: "Cari Tahun atau No. DI.208..."
         }
         Text {
             id: "nav_setting"
@@ -17,23 +17,37 @@ Navbar {
 }
 
 Text {
-    id: "output_pesan"
-    text: ""
-}
-Text {
     id: "sub_judul"
-    text: "Do you want to update this app?"
-    size: "20"
+    text: "Form Input Arsip Kardus Baru:"
+    size: "18"
+}
+
+Row {
+    Input {
+        id: "input_kardus"
+        placeholder: "Lokasi/No. Kardus (Contoh: Rak-A1)"
+    }
+}
+
+Row {
+    Input {
+        id: "input_range"
+        placeholder: "Rentang DI.208 (Contoh: 3526-3550)"
+    }
+    Input {
+        id: "input_tahun"
+        placeholder: "Tahun Warkah"
+    }
 }
 
 Row {
     Button {
-        id: "btn_cancel"
-        text: "Cancel"
-    }
-    Button {
-        id: "btn_update"
-        text: "Update"
+        id: "btn_simpan"
+        text: "Simpan Kardus ke Rust"
     }
 }
 
+Text {
+    id: "output_pesan"
+    text: "Status: Siap melakukan inventarisasi warkah."
+}
