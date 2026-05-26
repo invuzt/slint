@@ -7,8 +7,9 @@ static INIT: std::sync::Once = std::sync::Once::new();
 
 fn init_database() {
     INIT.call_once(|| {
-        let db_path = "/storage/emulated/0/Download/arzip_lokal.db";
-        let conn = Connection::open(db_path).expect("Gagal membuat file SQLite di folder Download");
+        // MENGGUNAKAN PATH INTERNAL: Dijamin lolos sandbox Android tanpa crash!
+        let db_path = "/data/data/com.cak.cakru/files/arzip_lokal.db";
+        let conn = Connection::open(db_path).expect("Gagal membuat file SQLite di folder internal");
         
         conn.execute(
             "CREATE TABLE IF NOT EXISTS kardus_arsip (
@@ -61,7 +62,6 @@ fn init_database() {
 fn render_table_from_db(query_condition: &str, query_params: &[&dyn rusqlite::ToSql], limit: usize) -> String {
     let db_slot = DB_CONN.lock().unwrap();
     if let Some(conn) = db_slot.as_ref() {
-        // ID DESC memastikan inputan terbaru (seperti kardus campuran) langsung nangkring di baris teratas!
         let sql = format!(
             "SELECT gudang, lokasi, start_di, end_di, tahun FROM kardus_arsip {} ORDER BY id DESC LIMIT {}",
             query_condition, limit
@@ -85,9 +85,8 @@ fn render_table_from_db(query_condition: &str, query_params: &[&dyn rusqlite::To
         let mut susunan_tabel = Vec::new();
         for (index, item) in rows_iter.enumerate() {
             if let Ok((gudang, lokasi, start_di, end_di, tahun)) = item {
-                // Modifikasi teks tampilan agar informasi lokasi "Campuran" atau nomor kardus terlihat jelas
                 susunan_tabel.push(format!(
-                    "{}. 📂 Rentang DI.208: {} - {}\n   🏢 Tempat: {}\n   📍 Lokasi/Kardus: {}\n   📅 Tahun: {}\n   ──────────────────────",
+                    "{}. 📦 Rentang DI.208: {} - {}\n   🏢 Tempat: {}\n   📍 Lokasi/Kardus: {}\n   📅 Tahun: {}\n   ──────────────────────",
                     index + 1, start_di, end_di, gudang, lokasi, tahun
                 ));
             }
@@ -158,7 +157,6 @@ pub fn handle_action(action: &str, payload: &str) -> String {
             let query_angka = payload.trim().parse::<i32>().unwrap_or(-1);
 
             if query_angka != -1 {
-                // PENYEMPURNAAN QUERY: Cari angka yang berada di dalam rentang berkas manapun!
                 render_table_from_db(
                     "WHERE (?1 >= start_di AND ?1 <= end_di) OR tahun LIKE ?2",
                     params![query_angka, query],

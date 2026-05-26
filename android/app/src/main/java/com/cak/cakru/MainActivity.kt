@@ -23,6 +23,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import androidx.drawerlayout.widget.DrawerLayout
 import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
 import java.util.Stack
 
 class MainActivity : AppCompatActivity() {
@@ -31,6 +33,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Membuat folder "files" terlebih dahulu sebelum dipanggil Rust JNI untuk mencegah IO Error
+        val fDir = filesDir
+        if (!fDir.exists()) fDir.mkdirs()
 
         val initialGudangRaw = RustJni.Hub("nav_setting", "")
         updateGudangListFromPayload(initialGudangRaw)
@@ -327,14 +333,12 @@ class MainActivity : AppCompatActivity() {
                     return@setOnClickListener
                 }
                 
-                // AKSI DINAMIS 1: MENU UTAMA CATAT WARKAH BARU
                 if (action == "menu_input") {
                     drawerLayout.closeDrawer(Gravity.START)
                     (viewMap["input_range"] as? EditText)?.requestFocus()
                     return@setOnClickListener
                 }
 
-                // AKSI DINAMIS 2: SHARE DATABASE .DB KELUAR HP VIA ANDROID INTENT
                 if (action == "menu_share") {
                     drawerLayout.closeDrawer(Gravity.START)
                     shareDatabaseFile()
@@ -377,17 +381,24 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // FUNGSI INTI: Membuka dialog Share asli Android untuk mengirim file .db
     private fun shareDatabaseFile() {
-        val dbFile = File("/storage/emulated/0/Download/arzip_lokal.db")
-        if (!dbFile.exists()) {
+        // AMBIL DARI FOLDER INTERNAL PRIVAT APLIKASI
+        val internalDb = File(filesDir, "arzip_lokal.db")
+        if (!internalDb.exists()) {
             Toast.makeText(this, "⚠️ File database belum terbentuk. Silakan isi data dahulu!", Toast.LENGTH_LONG).show()
             return
         }
 
         try {
-            // Menggunakan FileProvider internal agar aman dari aturan ketat penyimpanan Android Nougat ke atas
-            val uri: Uri = FileProvider.getUriForFile(this, "${packageName}.fileprovider", dbFile)
+            // Salin database internal ke folder cache publik sementara agar legal dibagikan keluar aplikasi
+            val exportFile = File(cacheDir, "arzip_lokal.db")
+            FileInputStream(internalDb).use { input ->
+                FileOutputStream(exportFile).use { output ->
+                    input.copyTo(output)
+                }
+            }
+
+            val uri: Uri = FileProvider.getUriForFile(this, "${packageName}.fileprovider", exportFile)
             
             val shareIntent = Intent(Intent.ACTION_SEND).apply {
                 type = "application/x-sqlite3"
