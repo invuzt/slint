@@ -1,6 +1,7 @@
 package com.cak.cakru
 
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.Gravity
 import android.view.ViewGroup
@@ -15,6 +16,12 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Palet Warna MD3 Modern
+        val primaryButtonColor = Color.parseColor("#6750A4") // Primary MD3 (contoh ungu)
+        val buttonTextColor = Color.parseColor("#FFFFFF") // On Primary MD3 (putih)
+        val buttonHeightDp = 56 // Tinggi tombol 56dp sesuai referensi
+        val buttonPaddingHorizontalDp = 24 // Padding horizontal 24dp per sisi sesuai referensi
 
         val rootLayout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -44,6 +51,11 @@ class MainActivity : AppCompatActivity() {
         var colorVal = ""
 
         var lastActiveInput: EditText? = null
+
+        // Fungsi bantu untuk konversi DP ke PX
+        fun dpToPx(dp: Int): Int {
+            return (dp * resources.displayMetrics.density).toInt()
+        }
 
         for (line in lines) {
             val trimmed = line.trim()
@@ -87,8 +99,10 @@ class MainActivity : AppCompatActivity() {
 
                 if (containerType == "Row" && currentWidget == "") {
                     if (containerStack.size > 1) containerStack.pop()
+                    currentWidget = ""
                     continue
                 } else if (containerType == "App" && currentWidget == "") {
+                    currentWidget = ""
                     continue
                 }
 
@@ -128,10 +142,29 @@ class MainActivity : AppCompatActivity() {
                     "Button" -> {
                         val btn = Button(this).apply {
                             text = textVal
+                            setTextColor(buttonTextColor)
+                            isAllCaps = false
+                            textSize = 16f
+                            
+                            // Terapkan Padding MD3 (24dp horizontal)
+                            val paddingHorizontal = dpToPx(buttonPaddingHorizontalDp)
+                            setPadding(paddingHorizontal, 0, paddingHorizontal, 0)
+
+                            // Terapkan Bentuk Kapsul Bulat Penuh MD3
+                            val shape = GradientDrawable().apply {
+                                shape = GradientDrawable.RECTANGLE
+                                cornerRadius = dpToPx(buttonHeightDp / 2).toFloat() // Radius = setengah tinggi agar bulat penuh
+                                setColor(primaryButtonColor)
+                            }
+                            background = shape
+                            
+                            // Atur LayoutParams dengan Tinggi 56dp
                             layoutParams = if (activeContainer.orientation == LinearLayout.HORIZONTAL) {
-                                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
+                                LinearLayout.LayoutParams(0, dpToPx(buttonHeightDp), 1f).apply {
+                                    setMargins(10, 0, 10, 0)
+                                }
                             } else {
-                                LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                                LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dpToPx(buttonHeightDp)).apply {
                                     setMargins(0, 10, 0, 10)
                                 }
                             }
