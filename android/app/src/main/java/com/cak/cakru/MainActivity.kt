@@ -25,7 +25,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         val filledButtonColor = Color.parseColor("#0067FF")
-        val outlinedButtonColor = Color.parseColor("#0067FF")
         val buttonTextFilledColor = Color.parseColor("#FFFFFF")
         val inputBackgroundColor = Color.parseColor("#F3EDF7")
         val inputIndicatorColor = Color.parseColor("#49454F")
@@ -62,7 +61,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         val menuTitle = TextView(this).apply {
-            text = "BPN DI.208"
+            text = "ArZip Registry"
             textSize = 24f
             setTypeface(null, Typeface.BOLD)
             setTextColor(Color.parseColor("#1C1B1F"))
@@ -177,7 +176,8 @@ class MainActivity : AppCompatActivity() {
                                 isFocusable = true
                                 layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT)
                             } else {
-                                textSize = if (sizeVal.isNotEmpty()) sizeVal.安定 else 16f
+                                // FIXED: Mengganti '安定' menjadi '16f' (Float murni standar Kotlin)
+                                textSize = if (sizeVal.isNotEmpty()) sizeVal.toFloat() else 16f
                                 setTextColor(if (colorVal.isNotEmpty()) Color.parseColor(colorVal) else Color.parseColor("#1C1B1F"))
                                 setPadding(0, dpToPx(6), 0, dpToPx(6))
                                 layoutParams = LinearLayout.LayoutParams(
@@ -268,7 +268,6 @@ class MainActivity : AppCompatActivity() {
         drawerLayout.addView(sideMenuContainer)
         setContentView(drawerLayout)
 
-        // EKSEKUTOR SEPAKAT KELOLA MULTI INPUT FORM
         for (triple in viewActions) {
             val view = triple.first
             val action = triple.second
@@ -276,10 +275,11 @@ class MainActivity : AppCompatActivity() {
 
             view.setOnClickListener {
                 val payloadData = if (isFormSubmit) {
+                    val gud = (viewMap["input_gudang"] as? EditText)?.text?.toString() ?: ""
                     val lok = (viewMap["input_kardus"] as? EditText)?.text?.toString() ?: ""
                     val rng = (viewMap["input_range"] as? EditText)?.text?.toString() ?: ""
                     val thn = (viewMap["input_tahun"] as? EditText)?.text?.toString() ?: ""
-                    "$lok|$rng|$thn"
+                    "$gud|$lok|$rng|$thn"
                 } else ""
 
                 val resultFromRust = RustJni.Hub(action, payloadData)
@@ -289,8 +289,8 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     (viewMap["output_pesan"] as? TextView)?.text = resultFromRust
                     
-                    // Bersihkan form setelah sukses klik simpan
                     if (isFormSubmit && resultFromRust.startsWith("✅")) {
+                        (viewMap["input_gudang"] as? EditText)?.setText("")
                         (viewMap["input_kardus"] as? EditText)?.setText("")
                         (viewMap["input_range"] as? EditText)?.setText("")
                         (viewMap["input_tahun"] as? EditText)?.setText("")

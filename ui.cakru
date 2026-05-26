@@ -7,7 +7,7 @@ Navbar {
         }
         Input {
             id: "nav_search"
-            placeholder: "Cari Tahun atau No. DI.208..."
+            placeholder: "Cari No. DI.208 / Tahun / Gudang..."
         }
         Text {
             id: "nav_setting"
@@ -18,14 +18,18 @@ Navbar {
 
 Text {
     id: "sub_judul"
-    text: "Form Input Arsip Kardus Baru:"
+    text: "Pilih Gudang & Lokasi Penyimpanan:"
     size: "18"
 }
 
 Row {
     Input {
+        id: "input_gudang"
+        placeholder: "Gudang (Lama / Baru Lnt 1 / Baru Lnt 2)"
+    }
+    Input {
         id: "input_kardus"
-        placeholder: "Lokasi/No. Kardus (Contoh: Rak-A1)"
+        placeholder: "Detail Posisi / No. Rak"
     }
 }
 
@@ -49,5 +53,5 @@ Row {
 
 Text {
     id: "output_pesan"
-    text: "Status: Siap melakukan inventarisasi warkah."
+    text: "Status: Siap memetakan 3 lokasi gudang warkah."
 }
