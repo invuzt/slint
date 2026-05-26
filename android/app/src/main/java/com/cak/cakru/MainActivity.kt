@@ -65,16 +65,8 @@ class MainActivity : AppCompatActivity() {
             layoutParams = DrawerLayout.LayoutParams(dpToPx(280), ViewGroup.LayoutParams.MATCH_PARENT).apply {
                 gravity = Gravity.START
             }
+            tag = "SideDrawer"
         }
-
-        val menuTitle = TextView(this).apply {
-            text = "ArZip Panel"
-            textSize = 24f
-            setTypeface(null, Typeface.BOLD)
-            setTextColor(Color.parseColor("#1C1B1F"))
-            setPadding(0, 0, 0, dpToPx(24))
-        }
-        sideMenuContainer.addView(menuTitle)
 
         var navbarContainer: LinearLayout? = null
         val globalScrollView = ScrollView(this).apply {
@@ -108,6 +100,7 @@ class MainActivity : AppCompatActivity() {
         var colorVal = ""
 
         var isInsideNavbar = false
+        var isInsideDrawer = false
         val outValue = TypedValue()
         theme.resolveAttribute(android.R.attr.selectableItemBackgroundBorderless, outValue, true)
         val rippleResId = outValue.resourceId
@@ -120,6 +113,10 @@ class MainActivity : AppCompatActivity() {
                 currentWidget = trimmed.split(" ")[0]
                 idVal = ""; textVal = ""; hintVal = ""; actionVal = ""; sizeVal = ""; colorVal = ""
                 when (currentWidget) {
+                    "Drawer" -> {
+                        isInsideDrawer = true
+                        containerStack.push(sideMenuContainer)
+                    }
                     "Navbar" -> {
                         isInsideNavbar = true
                         navbarContainer = LinearLayout(this).apply {
@@ -162,7 +159,8 @@ class MainActivity : AppCompatActivity() {
                 val activeContainer = containerStack.peek()
                 val containerType = activeContainer.tag as? String
 
-                if ((containerType == "Row" || containerType == "Navbar") && currentWidget == "") {
+                if (currentWidget == "") {
+                    if (containerType == "SideDrawer") isInsideDrawer = false
                     if (containerType == "Navbar") isInsideNavbar = false
                     if (containerStack.size > 1) containerStack.pop()
                     currentWidget = ""
@@ -182,6 +180,14 @@ class MainActivity : AppCompatActivity() {
                                 isClickable = true
                                 isFocusable = true
                                 layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                            } else if (isInsideDrawer) {
+                                textSize = if (sizeVal.isNotEmpty()) sizeVal.toFloat() else 16f
+                                setTextColor(if (colorVal.isNotEmpty()) Color.parseColor(colorVal) else Color.parseColor("#1C1B1F"))
+                                setPadding(0, dpToPx(14), 0, dpToPx(14))
+                                setBackgroundResource(rippleResId)
+                                isClickable = true
+                                isFocusable = true
+                                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
                             } else {
                                 textSize = if (sizeVal.isNotEmpty()) sizeVal.toFloat() else 16f
                                 setTextColor(if (colorVal.isNotEmpty()) Color.parseColor(colorVal) else Color.parseColor("#1C1B1F"))
@@ -195,7 +201,7 @@ class MainActivity : AppCompatActivity() {
                         }
                         activeContainer.addView(tv)
                         if (idVal.isNotEmpty()) viewMap[idVal] = tv
-                        if (isInsideNavbar && (actionVal.isNotEmpty() || idVal.isNotEmpty())) {
+                        if ((isInsideNavbar || isInsideDrawer) && (actionVal.isNotEmpty() || idVal.isNotEmpty())) {
                             viewActions.add(Triple(tv, if (actionVal.isNotEmpty()) actionVal else idVal, false))
                         }
                     }
@@ -216,7 +222,6 @@ class MainActivity : AppCompatActivity() {
                                     override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
                                     override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                                         val res = RustJni.Hub(searchActionId, s?.toString() ?: "")
-                                        // Update komponen kontainer tabel dinamis saat mencari data
                                         (viewMap["tabel_konten"] as? TextView)?.text = res
                                     }
                                     override fun afterTextChanged(s: Editable?) {}
@@ -304,7 +309,6 @@ class MainActivity : AppCompatActivity() {
         drawerLayout.addView(sideMenuContainer)
         setContentView(drawerLayout)
 
-        // AMBIL & RENDER LIVE DATA AWAL SAAT APLIKASI DIBUKA
         val dataAwalTabel = RustJni.Hub("ambil_tabel_awal", "")
         (viewMap["tabel_konten"] as? TextView)?.text = dataAwalTabel
 
@@ -316,6 +320,15 @@ class MainActivity : AppCompatActivity() {
             view.setOnClickListener {
                 if (action == "nav_setting") {
                     openGudangManagementDialog()
+                    return@setOnClickListener
+                }
+                if (action == "menu_sync") {
+                    drawerLayout.closeDrawer(Gravity.START)
+                    (viewMap["output_pesan"] as? TextView)?.text = "🔄 Memulai sinkronisasi API ke server lokal..."
+                    return@setOnClickListener
+                }
+                if (action == "menu_input") {
+                    drawerLayout.closeDrawer(Gravity.START)
                     return@setOnClickListener
                 }
 
@@ -342,12 +355,9 @@ class MainActivity : AppCompatActivity() {
                     drawerLayout.openDrawer(Gravity.START)
                 } else {
                     if (isFormSubmit && resultFromRust.startsWith("✅ SUCCESS")) {
-                        // Pecah string jika sukses untuk memperbarui status pesan dan tabel konten sekaligus
                         (viewMap["output_pesan"] as? TextView)?.text = "✅ Data kardus berhasil direkam!"
-                        
                         val tabelTerupdate = resultFromRust.substringAfter("✅ SUKSES\n")
                         (viewMap["tabel_konten"] as? TextView)?.text = tabelTerupdate
-
                         inputRangeEt?.setText("")
                         inputRangeEt?.requestFocus()
                     } else {
@@ -370,13 +380,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun openGudangManagementDialog() {
         val builder = AlertDialog.Builder(this)
-        builder.setTitle("⚙️ Kelola Master Gudang")
-
+        builder.setTitle("⚙️ Kel Kelola Master Gudang")
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(40, 20, 40, 20)
         }
-
         val description = TextView(this).apply {
             text = "Daftar Gudang Aktif saat ini (Tap untuk hapus):"
             setPadding(0, 0, 0, 10)

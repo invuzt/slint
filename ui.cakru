@@ -1,3 +1,31 @@
+# --- MENU SAMPING / DRAWER PANEL ---
+Drawer {
+    id: "side_drawer"
+    Text {
+        id: "panel_title"
+        text: "ArZip Registry"
+        size: "24"
+        color: "#1C1B1F"
+    }
+    Text {
+        id: "menu_input"
+        text: "📝 Catat Warkah Baru"
+        size: "16"
+    }
+    Text {
+        id: "menu_sync"
+        text: "🔄 Sinkronisasi Server API"
+        size: "16"
+    }
+    Text {
+        id: "menu_info"
+        text: "ℹ️ Status Gudang: Terhubung"
+        size: "14"
+        color: "#79747E"
+    }
+}
+
+# --- NAVBAR UTAMA ---
 Navbar {
     id: "top_nav"
     Row {
@@ -16,6 +44,7 @@ Navbar {
     }
 }
 
+# --- FORM UTAMA ---
 Text {
     id: "sub_judul"
     text: "Pencatatan Cepat ArZip DI.208:"
@@ -56,7 +85,7 @@ Text {
     text: "Status: Siap menerima entri data."
 }
 
-# --- BAGIAN COMPONENT TABEL / LIST VIEW LAZY DATA ---
+# --- TABEL UNTUK LIVE PREVIEW ---
 Text {
     id: "tabel_judul"
     text: "\n📋 DATA TERBARU / HASIL PENCARIAN:"
